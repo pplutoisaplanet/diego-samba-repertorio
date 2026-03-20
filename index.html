@@ -17,6 +17,9 @@
 		#addSongBtn:hover { opacity: 0.85; transform: scale(1.05); }
         #themeToggle { flex-shrink: 0; height: 50px; min-width: 78px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); transition: 0.2s; }
         #themeToggle:hover { border-color: var(--accent); color: var(--accent); }
+        #adminAuthBtn { flex-shrink: 0; height: 50px; min-width: 92px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 14px; transition: 0.2s; }
+        #adminAuthBtn:hover { border-color: var(--accent); color: var(--accent); }
+        #authStatus { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
 		/* Modal */
 		.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
@@ -58,6 +61,7 @@
 		.youtube-link { display: inline-flex; align-items: center; gap: 6px; margin: 0 40px 16px 40px; padding: 8px 18px; background: none; border: 1px solid #e00; border-radius: 20px; font-size: 13px; color: #e00; text-decoration: none; cursor: pointer; transition: 0.2s; }
 		.youtube-link:hover { background: #fff0f0; }
 		html[data-theme="dark"] .youtube-link:hover { background: #2a0000; }
+		button:disabled { opacity: 0.5; cursor: not-allowed; }
         footer { text-align: center; padding: 40px; font-size: 14px; color: var(--muted); letter-spacing: 1px; }
     </style>
 </head>
@@ -70,6 +74,8 @@
 <div class="search-container">
     <input type="text" id="searchInput" onkeyup="searchSongs()" placeholder="Buscar música, artista ou tom...">
     <button id="themeToggle" type="button" title="Switch to dark mode">Dark</button>
+    <button id="adminAuthBtn" type="button" title="Admin login">Admin</button>
+    <span id="authStatus">Local Mode</span>
     <button id="addSongBtn" title="Add new song">+</button>
 </div>
 
@@ -89,6 +95,20 @@
         <div class="modal-buttons">
             <button class="modal-cancel" id="modalCancel">Cancel</button>
             <button class="modal-save" id="modalSave">Add Song</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="authModalOverlay">
+    <div class="modal">
+        <h2>Admin Login</h2>
+        <label>Email</label>
+        <input type="email" id="authEmail" placeholder="admin@email.com">
+        <label>Password</label>
+        <input type="password" id="authPassword" placeholder="••••••••">
+        <div class="modal-buttons">
+            <button class="modal-cancel" id="authCancel">Cancel</button>
+            <button class="modal-save" id="authLogin">Login</button>
         </div>
     </div>
 </div>
@@ -2079,9 +2099,24 @@ A quem sempre lhe deu a mão</div></div>
   2026 Diego Samba • Repertório Online
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
     const container = document.getElementById('songList');
     const themeToggle = document.getElementById('themeToggle');
+    const addSongBtn = document.getElementById('addSongBtn');
+    const adminAuthBtn = document.getElementById('adminAuthBtn');
+    const authStatus = document.getElementById('authStatus');
+    const authModalOverlay = document.getElementById('authModalOverlay');
+    const authEmailInput = document.getElementById('authEmail');
+    const authPasswordInput = document.getElementById('authPassword');
+    const supabaseConfig = {
+        url: '',
+        anonKey: ''
+    };
+    const supabaseClient = supabaseConfig.url && supabaseConfig.anonKey && window.supabase
+        ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey)
+        : null;
+    let currentUser = null;
 
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
@@ -2101,7 +2136,271 @@ A quem sempre lhe deu a mão</div></div>
         localStorage.setItem('theme_preference', nextTheme);
     });
 
-    function buildItem(titleText, artistText, tuningText, youtubeUrl, lyricsText, storageKey) {
+    function canWriteSongs() {
+        return !supabaseClient || !!currentUser;
+    }
+
+    function updateWriteControlsState() {
+        const writeAllowed = canWriteSongs();
+        addSongBtn.disabled = !writeAllowed;
+        addSongBtn.title = writeAllowed ? 'Add new song' : 'Admin login required to add songs';
+        document.querySelectorAll('.edit-btn, .save-btn, .delete-btn').forEach(button => {
+            button.disabled = !writeAllowed;
+        });
+    }
+
+    function updateAuthUi() {
+        if (!supabaseClient) {
+            adminAuthBtn.textContent = 'Admin';
+            adminAuthBtn.title = 'Configure Supabase to enable admin auth';
+            authStatus.textContent = 'Local Mode';
+            updateWriteControlsState();
+            return;
+        }
+
+        if (currentUser) {
+            adminAuthBtn.textContent = 'Logout';
+            adminAuthBtn.title = 'Logout admin';
+            authStatus.textContent = 'Admin Connected';
+        } else {
+            adminAuthBtn.textContent = 'Login';
+            adminAuthBtn.title = 'Admin login';
+            authStatus.textContent = 'Read Only';
+        }
+
+        updateWriteControlsState();
+    }
+
+    function requireWriteAccess() {
+        if (canWriteSongs()) {
+            return true;
+        }
+        alert('Admin login required for add/edit/delete.');
+        return false;
+    }
+
+    async function initializeAuth() {
+        if (!supabaseClient) {
+            updateAuthUi();
+            return;
+        }
+
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (!error) {
+            currentUser = data.session ? data.session.user : null;
+        }
+
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            currentUser = session ? session.user : null;
+            updateAuthUi();
+        });
+
+        updateAuthUi();
+    }
+
+    adminAuthBtn.addEventListener('click', async () => {
+        if (!supabaseClient) {
+            alert('Configure Supabase URL and anon key first.');
+            return;
+        }
+
+        if (currentUser) {
+            await supabaseClient.auth.signOut();
+            return;
+        }
+
+        authEmailInput.value = '';
+        authPasswordInput.value = '';
+        authModalOverlay.classList.add('open');
+        authEmailInput.focus();
+    });
+
+    document.getElementById('authCancel').addEventListener('click', () => {
+        authModalOverlay.classList.remove('open');
+    });
+
+    authModalOverlay.addEventListener('click', (event) => {
+        if (event.target === authModalOverlay) {
+            authModalOverlay.classList.remove('open');
+        }
+    });
+
+    document.getElementById('authLogin').addEventListener('click', async () => {
+        const email = authEmailInput.value.trim();
+        const password = authPasswordInput.value;
+
+        if (!email || !password) {
+            return;
+        }
+
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            alert('Login failed: ' + error.message);
+            return;
+        }
+
+        authModalOverlay.classList.remove('open');
+    });
+
+    const customSongsStorageKey = 'custom_song_keys';
+
+    function getCustomSongKeys() {
+        return JSON.parse(localStorage.getItem(customSongsStorageKey) || '[]');
+    }
+
+    function setCustomSongKeys(keys) {
+        localStorage.setItem(customSongsStorageKey, JSON.stringify(keys));
+    }
+
+    function addCustomSongKey(storageKey) {
+        const keys = getCustomSongKeys();
+        if (!keys.includes(storageKey)) {
+            keys.push(storageKey);
+            setCustomSongKeys(keys);
+        }
+    }
+
+    function removeCustomSongKey(storageKey) {
+        const keys = getCustomSongKeys().filter(key => key !== storageKey);
+        setCustomSongKeys(keys);
+    }
+
+    function loadLocalSongRecords() {
+        const customSongKeys = new Set(getCustomSongKeys());
+        const songs = [];
+
+        for (let index = 0; index < localStorage.length; index++) {
+            const storageKey = localStorage.key(index);
+            if (!storageKey || !storageKey.startsWith('song_')) {
+                continue;
+            }
+
+            const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+            if (!saved || !saved.title) {
+                continue;
+            }
+
+            songs.push({
+                storageKey,
+                title: saved.title,
+                artist: saved.artist || '',
+                tuning: saved.tuning || '',
+                youtube: saved.youtube || '',
+                lyrics: saved.lyrics || '',
+                isCustom: saved.isCustom === undefined ? customSongKeys.has(storageKey) : !!saved.isCustom,
+                isDeleted: !!saved.isDeleted
+            });
+        }
+
+        return songs;
+    }
+
+    function saveSongToLocal(song) {
+        localStorage.setItem(song.storageKey, JSON.stringify({
+            title: song.title,
+            artist: song.artist,
+            tuning: song.tuning,
+            youtube: song.youtube,
+            lyrics: song.lyrics,
+            isCustom: song.isCustom,
+            isDeleted: song.isDeleted
+        }));
+
+        if (song.isCustom && !song.isDeleted) {
+            addCustomSongKey(song.storageKey);
+        } else if (song.isCustom && song.isDeleted) {
+            removeCustomSongKey(song.storageKey);
+        }
+    }
+
+    async function loadStoredSongRecords() {
+        const localSongs = loadLocalSongRecords();
+
+        if (supabaseClient) {
+            const { data, error } = await supabaseClient
+                .from('songs')
+                .select('storage_key, title, artist, tuning, youtube, lyrics, is_custom, is_deleted');
+
+            if (!error && Array.isArray(data)) {
+                const mergedSongs = new Map(localSongs.map(song => [song.storageKey, song]));
+
+                data.forEach(song => {
+                    mergedSongs.set(song.storage_key, {
+                        storageKey: song.storage_key,
+                        title: song.title,
+                        artist: song.artist || '',
+                        tuning: song.tuning || '',
+                        youtube: song.youtube || '',
+                        lyrics: song.lyrics || '',
+                        isCustom: !!song.is_custom,
+                        isDeleted: !!song.is_deleted
+                    });
+                });
+
+                return Array.from(mergedSongs.values());
+            }
+
+            console.error('Supabase load failed, using local fallback.', error);
+        }
+
+        return localSongs;
+    }
+
+    async function persistSong(song) {
+        saveSongToLocal(song);
+
+        if (!supabaseClient) {
+            return true;
+        }
+
+        const { error } = await supabaseClient.from('songs').upsert({
+            storage_key: song.storageKey,
+            title: song.title,
+            artist: song.artist,
+            tuning: song.tuning,
+            youtube: song.youtube,
+            lyrics: song.lyrics,
+            is_custom: song.isCustom,
+            is_deleted: song.isDeleted
+        }, {
+            onConflict: 'storage_key'
+        });
+
+        if (error) {
+            console.error('Supabase save failed.', error);
+            return false;
+        }
+
+        return true;
+    }
+
+    async function deleteSongRecord(song) {
+        if (song.isCustom) {
+            localStorage.removeItem(song.storageKey);
+            removeCustomSongKey(song.storageKey);
+
+            if (!supabaseClient) {
+                return true;
+            }
+
+            const { error } = await supabaseClient.from('songs').delete().eq('storage_key', song.storageKey);
+            if (error) {
+                console.error('Supabase delete failed.', error);
+                return false;
+            }
+
+            return true;
+        }
+
+        const deletedSong = {
+            ...song,
+            isDeleted: true
+        };
+
+        return persistSong(deletedSong);
+    }
+
+    function buildItem(titleText, artistText, tuningText, youtubeUrl, lyricsText, storageKey, isCustom = false) {
         const item = document.createElement('div');
         item.className = 'item';
 
@@ -2201,9 +2500,22 @@ A quem sempre lhe deu a mão</div></div>
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = '🗑️ Delete Song';
 
-        deleteBtn.addEventListener('click', () => {
+        deleteBtn.addEventListener('click', async () => {
+            if (!requireWriteAccess()) {
+                return;
+            }
+
             if (confirm(`Delete "${titleInput.value.trim()}"? This cannot be undone.`)) {
-                localStorage.removeItem(storageKey);
+                await deleteSongRecord({
+                    storageKey,
+                    title: titleInput.value.trim(),
+                    artist: artistInput.value.trim(),
+                    tuning: tuningInput.value.trim(),
+                    youtube: youtubeInput.value.trim(),
+                    lyrics: lyricsTextarea.value,
+                    isCustom: item._isCustom,
+                    isDeleted: false
+                });
                 item.remove();
                 sortAndNumber();
             }
@@ -2232,6 +2544,9 @@ A quem sempre lhe deu a mão</div></div>
         // Edit toggle
         editBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (!requireWriteAccess()) {
+                return;
+            }
             const isOpen = editPanel.classList.contains('open');
             editPanel.classList.toggle('open');
             editBtn.textContent = isOpen ? '✏️ Edit' : '✕ Close';
@@ -2239,7 +2554,11 @@ A quem sempre lhe deu a mão</div></div>
         });
 
         // Save
-        saveBtn.addEventListener('click', () => {
+        saveBtn.addEventListener('click', async () => {
+            if (!requireWriteAccess()) {
+                return;
+            }
+
             const newTitle = titleInput.value.trim();
             const newArtist = artistInput.value.trim();
             const newTuning = tuningInput.value.trim();
@@ -2253,17 +2572,21 @@ A quem sempre lhe deu a mão</div></div>
             youtubeLinkEl.href = newYoutube;
             youtubeLinkEl.style.display = newYoutube ? '' : 'none';
 
-            localStorage.setItem(storageKey, JSON.stringify({
+            await persistSong({
+                storageKey,
                 title: newTitle,
                 artist: newArtist,
                 tuning: newTuning,
                 youtube: newYoutube,
-                lyrics: newLyrics
-            }));
+                lyrics: newLyrics,
+                isCustom: item._isCustom,
+                isDeleted: false
+            });
 
             editPanel.classList.remove('open');
             editBtn.textContent = '✏️ Edit';
             content.style.maxHeight = content.scrollHeight + "px";
+            item._sortTitle = newTitle.toLowerCase();
 
             // Re-sort and renumber
             sortAndNumber();
@@ -2271,7 +2594,9 @@ A quem sempre lhe deu a mão</div></div>
 
         item._titleNode = titleNode;
         item._storageKey = storageKey;
+        item._isCustom = isCustom;
         item._sortTitle = titleText.toLowerCase();
+        updateWriteControlsState();
 
         return item;
     }
@@ -2293,37 +2618,73 @@ A quem sempre lhe deu a mão</div></div>
         });
     }
 
-    // Build items from existing HTML
-    const rawItems = Array.from(container.getElementsByClassName('item'));
-    rawItems.forEach(item => {
-        const btn = item.querySelector('.btn');
-        const titleNode = btn.childNodes[0];
-        const artistEl = item.querySelector('.artist');
-        const lyricsDiv = item.querySelector('.lyrics');
+    async function initializeSongs() {
+        const storedSongs = await loadStoredSongRecords();
+        const storedSongMap = new Map(storedSongs.map(song => [song.storageKey, song]));
 
-        const originalTitle = titleNode.textContent.trim();
-        const originalArtist = artistEl ? artistEl.textContent.trim() : '';
-        const originalTuning = item.dataset.tuning || '';
-        const originalLyrics = lyricsDiv.textContent.trim();
+        const rawItems = Array.from(container.getElementsByClassName('item'));
+        const existingStorageKeys = new Set();
 
-        const storageKey = 'song_' + originalTitle.toLowerCase().replace(/\s+/g, '_');
-        const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+        rawItems.forEach(item => {
+            const btn = item.querySelector('.btn');
+            const titleNode = btn.childNodes[0];
+            const artistEl = item.querySelector('.artist');
+            const lyricsDiv = item.querySelector('.lyrics');
 
-        const currentTitle = saved ? saved.title : originalTitle;
-        const currentArtist = saved ? saved.artist : originalArtist;
-        const currentTuning = saved ? (saved.tuning || originalTuning) : originalTuning;
-        const currentYoutube = saved ? (saved.youtube || '') : '';
-        const currentLyrics = saved ? saved.lyrics : originalLyrics;
+            const originalTitle = titleNode.textContent.trim();
+            const originalArtist = artistEl ? artistEl.textContent.trim() : '';
+            const originalTuning = item.dataset.tuning || '';
+            const originalLyrics = lyricsDiv.textContent.trim();
 
-        const newItem = buildItem(currentTitle, currentArtist, currentTuning, currentYoutube, currentLyrics, storageKey);
-        item.replaceWith(newItem);
-    });
+            const storageKey = 'song_' + originalTitle.toLowerCase().replace(/\s+/g, '_');
+            const storedSong = storedSongMap.get(storageKey);
+            existingStorageKeys.add(storageKey);
 
-    sortAndNumber();
+            if (storedSong && storedSong.isDeleted) {
+                item.remove();
+                return;
+            }
+
+            const currentTitle = storedSong ? storedSong.title : originalTitle;
+            const currentArtist = storedSong ? storedSong.artist : originalArtist;
+            const currentTuning = storedSong ? storedSong.tuning : originalTuning;
+            const currentYoutube = storedSong ? storedSong.youtube : '';
+            const currentLyrics = storedSong ? storedSong.lyrics : originalLyrics;
+
+            const newItem = buildItem(currentTitle, currentArtist, currentTuning, currentYoutube, currentLyrics, storageKey, false);
+            item.replaceWith(newItem);
+        });
+
+        storedSongs.forEach(song => {
+            if (!song.isCustom || song.isDeleted || existingStorageKeys.has(song.storageKey)) {
+                return;
+            }
+
+            const newItem = buildItem(
+                song.title,
+                song.artist,
+                song.tuning,
+                song.youtube,
+                song.lyrics,
+                song.storageKey,
+                true
+            );
+            container.appendChild(newItem);
+        });
+
+        sortAndNumber();
+    }
+
+    initializeAuth();
+    initializeSongs();
 
     // Add song modal
     const modalOverlay = document.getElementById('modalOverlay');
-    document.getElementById('addSongBtn').addEventListener('click', () => {
+    addSongBtn.addEventListener('click', () => {
+        if (!requireWriteAccess()) {
+            return;
+        }
+
         document.getElementById('newTitle').value = '';
         document.getElementById('newArtist').value = '';
         document.getElementById('newTuning').value = '';
@@ -2341,7 +2702,11 @@ A quem sempre lhe deu a mão</div></div>
         if (e.target === modalOverlay) modalOverlay.classList.remove('open');
     });
 
-    document.getElementById('modalSave').addEventListener('click', () => {
+    document.getElementById('modalSave').addEventListener('click', async () => {
+        if (!requireWriteAccess()) {
+            return;
+        }
+
         const title = document.getElementById('newTitle').value.trim();
         const artist = document.getElementById('newArtist').value.trim();
         const tuning = document.getElementById('newTuning').value.trim();
@@ -2351,9 +2716,18 @@ A quem sempre lhe deu a mão</div></div>
         if (!title) { document.getElementById('newTitle').focus(); return; }
 
         const storageKey = 'song_' + title.toLowerCase().replace(/\s+/g, '_');
-        localStorage.setItem(storageKey, JSON.stringify({ title, artist, tuning, youtube, lyrics }));
+        await persistSong({
+            storageKey,
+            title,
+            artist,
+            tuning,
+            youtube,
+            lyrics,
+            isCustom: true,
+            isDeleted: false
+        });
 
-        const newItem = buildItem(title, artist, tuning, youtube, lyrics, storageKey);
+        const newItem = buildItem(title, artist, tuning, youtube, lyrics, storageKey, true);
         container.appendChild(newItem);
         sortAndNumber();
 
