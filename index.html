@@ -69,8 +69,34 @@
 		html[data-theme="dark"] .youtube-link:hover { background: #2a0000; }
 		button:disabled { opacity: 0.5; cursor: not-allowed; }
         footer { text-align: center; padding: 40px; font-size: 14px; color: var(--muted); letter-spacing: 1px; }
-        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; justify-content: center; align-items: center; z-index: 10000; }
-        .spinner { border: 4px solid var(--border); border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            pointer-events: all;
+            touch-action: none;
+        }
+        html[data-theme="dark"] .loading-overlay {
+            background: rgba(20, 20, 20, 0.45);
+        }
+        .spinner {
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+        }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -127,6 +153,9 @@
             <button class="modal-cancel" id="authCancel">Cancel</button>
             <button class="modal-save" id="authLogin">Login</button>
             <button class="modal-secondary" id="authSignup">Create Account</button>
+        </div>
+        <div class="modal-buttons" style="margin-top: 8px; justify-content: center;">
+            <button class="modal-secondary" id="authResend" style="padding: 8px 14px; font-size: 12px;">Resend verification email</button>
         </div>
         <p class="auth-toggle" id="authToggle" style="text-align: center; margin-top: 12px; font-size: 13px; color: var(--muted);"></p>
     </div>
@@ -2144,6 +2173,7 @@ A quem sempre lhe deu a mão</div></div>
     const authMessage = document.getElementById('authMessage');
     const authLoginBtn = document.getElementById('authLogin');
     const authSignupBtn = document.getElementById('authSignup');
+    const authResendBtn = document.getElementById('authResend');
     const authTitle = document.getElementById('authTitle');
     const authHelp = document.getElementById('authHelp');
     const authToggle = document.getElementById('authToggle');
@@ -2168,6 +2198,7 @@ A quem sempre lhe deu a mão</div></div>
             authUsernameInput.style.display = 'block';
             authSignupBtn.style.display = 'block';
             authLoginBtn.style.display = 'none';
+            authResendBtn.style.display = 'inline-block';
             authMessage.textContent = '';
             authToggle.innerHTML = 'Already have an account? <button id="authSwitchToLogin" style="background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 13px;">Login</button>';
             document.getElementById('authSwitchToLogin').addEventListener('click', (e) => {
@@ -2183,6 +2214,7 @@ A quem sempre lhe deu a mão</div></div>
             authUsernameInput.style.display = 'block';
             authSignupBtn.style.display = 'none';
             authLoginBtn.style.display = 'block';
+            authResendBtn.style.display = 'inline-block';
             authMessage.textContent = '';
             authToggle.innerHTML = 'Don\'t have an account? <button id="authSwitchToSignup" style="background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 13px;">Create one</button>';
             document.getElementById('authSwitchToSignup').addEventListener('click', (e) => {
@@ -2214,16 +2246,32 @@ A quem sempre lhe deu a mão</div></div>
 
     async function createProfile(userId, email, username) {
         if (!supabaseClient) return false;
-        const { error } = await supabaseClient.from('profiles').insert({
+        const { error } = await supabaseClient.from('profiles').upsert({
             id: userId,
             email,
             username
+        }, {
+            onConflict: 'id'
         });
         if (error && error.code !== 'PGRST116') {
             console.error('Profile creation failed:', error);
             return false;
         }
         return true;
+    }
+
+    async function ensureProfileForCurrentUser() {
+        if (!supabaseClient || !currentUser) {
+            return;
+        }
+
+        const fallbackUsername = currentUser.user_metadata?.username
+            || currentUser.email?.split('@')[0]
+            || 'user';
+
+        await createProfile(currentUser.id, currentUser.email, fallbackUsername);
+        const profileUsername = await getUsernameForEmail(currentUser.email);
+        currentUsername = profileUsername || fallbackUsername;
     }
 
     function applyTheme(theme) {
@@ -2294,9 +2342,11 @@ A quem sempre lhe deu a mão</div></div>
 
     function setAuthBusy(isBusy) {
         authEmailInput.disabled = isBusy;
+        authUsernameInput.disabled = isBusy;
         authPasswordInput.disabled = isBusy;
         authLoginBtn.disabled = isBusy;
         authSignupBtn.disabled = isBusy;
+        authResendBtn.disabled = isBusy;
     }
 
     async function initializeAuth() {
@@ -2309,14 +2359,14 @@ A quem sempre lhe deu a mão</div></div>
         if (!error) {
             currentUser = data.session ? data.session.user : null;
             if (currentUser) {
-                currentUsername = await getUsernameForEmail(currentUser.email);
+                await ensureProfileForCurrentUser();
             }
         }
 
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
             currentUser = session ? session.user : null;
             if (currentUser) {
-                currentUsername = await getUsernameForEmail(currentUser.email);
+                await ensureProfileForCurrentUser();
             } else {
                 currentUsername = null;
             }
@@ -2357,22 +2407,25 @@ A quem sempre lhe deu a mão</div></div>
     });
 
     document.getElementById('authLogin').addEventListener('click', async () => {
-        const username = authUsernameInput.value.trim();
+        const loginValue = authUsernameInput.value.trim();
         const password = authPasswordInput.value;
 
-        if (!username || !password) {
+        if (!loginValue || !password) {
             setAuthMessage('Username and password are required.', 'error');
             return;
         }
 
         setAuthBusy(true);
         setAuthMessage('Logging in...');
-        
-        const email = await getEmailForUsername(username);
-        if (!email) {
-            setAuthBusy(false);
-            setAuthMessage('Username not found.', 'error');
-            return;
+
+        let email = loginValue;
+        if (!loginValue.includes('@')) {
+            email = await getEmailForUsername(loginValue);
+            if (!email) {
+                setAuthBusy(false);
+                setAuthMessage('Username not found. Try your email if this is your first login after confirming.', 'error');
+                return;
+            }
         }
 
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -2415,6 +2468,9 @@ A quem sempre lhe deu a mão</div></div>
             email,
             password,
             options: {
+                data: {
+                    username
+                },
                 emailRedirectTo: window.location.origin + window.location.pathname
             }
         });
@@ -2425,7 +2481,13 @@ A quem sempre lhe deu a mão</div></div>
             return;
         }
 
-        if (data && data.user) {
+        if (data && data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+            setAuthBusy(false);
+            setAuthMessage('This email is already registered. If unconfirmed, use "Resend verification email" below.', 'error');
+            return;
+        }
+
+        if (data && data.user && data.session) {
             await createProfile(data.user.id, email, username);
             currentUsername = username;
         }
@@ -2438,6 +2500,31 @@ A quem sempre lhe deu a mão</div></div>
         }
 
         setAuthMessage('Signup successful. Check your email to confirm, then log in with your username.', 'success');
+    });
+
+    document.getElementById('authResend').addEventListener('click', async () => {
+        const email = authEmailInput.value.trim();
+        if (!email) {
+            setAuthMessage('Enter your email, then click resend.', 'error');
+            return;
+        }
+
+        setAuthBusy(true);
+        const { error } = await supabaseClient.auth.resend({
+            type: 'signup',
+            email,
+            options: {
+                emailRedirectTo: window.location.origin + window.location.pathname
+            }
+        });
+        setAuthBusy(false);
+
+        if (error) {
+            setAuthMessage('Resend failed: ' + error.message, 'error');
+            return;
+        }
+
+        setAuthMessage('Verification email sent. Check inbox/spam for Supabase confirmation.', 'success');
     });
 
     const customSongsStorageKey = 'custom_song_keys';
