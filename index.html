@@ -2696,6 +2696,7 @@ A quem sempre lhe deu a mão</div></div>
             const dateString = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
             const timestamp = `${dateString} at ${timeString}`;
+            const editorName = currentUser?.email || 'Unknown User';
 
             await persistSong({
                 storageKey,
@@ -2708,15 +2709,15 @@ A quem sempre lhe deu a mão</div></div>
                 isDeleted: false,
                 addedBy: item._addedBy,
                 addedAt: item._addedAt,
-                editedBy: 'Pedro de Janeiro',
+                editedBy: editorName,
                 editedAt: timestamp
             });
 
-            item._editedBy = 'Pedro de Janeiro';
+            item._editedBy = editorName;
             item._editedAt = timestamp;
             const editedDiv = metadataDiv.querySelector('div:last-child');
             if (editedDiv) {
-                editedDiv.innerHTML = `<strong>Last edited by:</strong> Pedro de Janeiro<br/><strong>Date:</strong> ${timestamp}`;
+                editedDiv.innerHTML = `<strong>Last edited by:</strong> ${editorName}<br/><strong>Date:</strong> ${timestamp}`;
             }
 
             editPanel.classList.remove('open');
@@ -2896,6 +2897,7 @@ A quem sempre lhe deu a mão</div></div>
         const dateString = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         const timestamp = `${dateString} at ${timeString}`;
+        const creatorName = currentUser?.email || 'Unknown User';
 
         const storageKey = 'song_' + title.toLowerCase().replace(/\s+/g, '_');
         await persistSong({
@@ -2907,13 +2909,13 @@ A quem sempre lhe deu a mão</div></div>
             lyrics,
             isCustom: true,
             isDeleted: false,
-            addedBy: 'Pedro de Janeiro',
+            addedBy: creatorName,
             addedAt: timestamp,
             editedBy: '',
             editedAt: ''
         });
 
-        const newItem = buildItem(title, artist, tuning, youtube, lyrics, storageKey, true, 'Pedro de Janeiro', timestamp, '', '');
+        const newItem = buildItem(title, artist, tuning, youtube, lyrics, storageKey, true, creatorName, timestamp, '', '');
         container.appendChild(newItem);
         sortAndNumber();
 
