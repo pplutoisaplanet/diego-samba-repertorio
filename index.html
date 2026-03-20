@@ -3009,12 +3009,11 @@ A quem sempre lhe deu a mão</div></div>
         const localSongs = loadLocalSongRecords();
         for (const song of localSongs) {
             if (song.addedBy && song.addedAt) {
-                const { error } = await supabaseClient.from('songs').upsert({
+                const payload = {
                     storage_key: song.storageKey,
                     title: song.title,
                     artist: song.artist,
                     tuning: song.tuning,
-                    youtube: song.youtube,
                     lyrics: song.lyrics,
                     is_custom: song.isCustom,
                     is_deleted: song.isDeleted,
@@ -3022,7 +3021,10 @@ A quem sempre lhe deu a mão</div></div>
                     added_at: song.addedAt,
                     edited_by: song.editedBy || '',
                     edited_at: song.editedAt || ''
-                }, {
+                };
+                // Only include youtube if local value is set — avoid blanking out DB values
+                if (song.youtube) payload.youtube = song.youtube;
+                const { error } = await supabaseClient.from('songs').upsert(payload, {
                     onConflict: 'storage_key'
                 });
                 if (error) console.error('Metadata sync failed for', song.storageKey, error);
