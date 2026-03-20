@@ -2329,6 +2329,27 @@ A quem sempre lhe deu a mão</div></div>
         setCustomSongKeys(keys);
     }
 
+    function initializeMissingMetadata() {
+        const defaultDate = 'Mar 20, 2026 at 10:00 AM';
+        const defaultEditor = 'Pedro de Janeiro';
+        
+        for (let index = 0; index < localStorage.length; index++) {
+            const storageKey = localStorage.key(index);
+            if (!storageKey || !storageKey.startsWith('song_')) continue;
+            
+            const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+            if (!saved || !saved.title) continue;
+            
+            if (!saved.addedBy || !saved.addedAt) {
+                saved.addedBy = defaultEditor;
+                saved.addedAt = defaultDate;
+                saved.editedBy = saved.editedBy || '';
+                saved.editedAt = saved.editedAt || '';
+                localStorage.setItem(storageKey, JSON.stringify(saved));
+            }
+        }
+    }
+
     function loadLocalSongRecords() {
         const customSongKeys = new Set(getCustomSongKeys());
         const songs = [];
@@ -2352,7 +2373,11 @@ A quem sempre lhe deu a mão</div></div>
                 youtube: saved.youtube || '',
                 lyrics: saved.lyrics || '',
                 isCustom: saved.isCustom === undefined ? customSongKeys.has(storageKey) : !!saved.isCustom,
-                isDeleted: !!saved.isDeleted
+                isDeleted: !!saved.isDeleted,
+                addedBy: saved.addedBy || '',
+                addedAt: saved.addedAt || '',
+                editedBy: saved.editedBy || '',
+                editedAt: saved.editedAt || ''
             });
         }
 
@@ -2367,7 +2392,11 @@ A quem sempre lhe deu a mão</div></div>
             youtube: song.youtube,
             lyrics: song.lyrics,
             isCustom: song.isCustom,
-            isDeleted: song.isDeleted
+            isDeleted: song.isDeleted,
+            addedBy: song.addedBy || '',
+            addedAt: song.addedAt || '',
+            editedBy: song.editedBy || '',
+            editedAt: song.editedAt || ''
         }));
 
         if (song.isCustom && !song.isDeleted) {
@@ -2383,7 +2412,7 @@ A quem sempre lhe deu a mão</div></div>
         if (supabaseClient) {
             const { data, error } = await supabaseClient
                 .from('songs')
-                .select('storage_key, title, artist, tuning, youtube, lyrics, is_custom, is_deleted');
+                .select('storage_key, title, artist, tuning, youtube, lyrics, is_custom, is_deleted, added_by, added_at, edited_by, edited_at');
 
             if (!error && Array.isArray(data)) {
                 const mergedSongs = new Map(localSongs.map(song => [song.storageKey, song]));
@@ -2397,7 +2426,11 @@ A quem sempre lhe deu a mão</div></div>
                         youtube: song.youtube || '',
                         lyrics: song.lyrics || '',
                         isCustom: !!song.is_custom,
-                        isDeleted: !!song.is_deleted
+                        isDeleted: !!song.is_deleted,
+                        addedBy: song.added_by || '',
+                        addedAt: song.added_at || '',
+                        editedBy: song.edited_by || '',
+                        editedAt: song.edited_at || ''
                     });
                 });
 
@@ -2425,7 +2458,11 @@ A quem sempre lhe deu a mão</div></div>
             youtube: song.youtube,
             lyrics: song.lyrics,
             is_custom: song.isCustom,
-            is_deleted: song.isDeleted
+            is_deleted: song.isDeleted,
+            added_by: song.addedBy || '',
+            added_at: song.addedAt || '',
+            edited_by: song.editedBy || '',
+            edited_at: song.editedAt || ''
         }, {
             onConflict: 'storage_key'
         });
@@ -2464,7 +2501,7 @@ A quem sempre lhe deu a mão</div></div>
         return persistSong(deletedSong);
     }
 
-    function buildItem(titleText, artistText, tuningText, youtubeUrl, lyricsText, storageKey, isCustom = false) {
+    function buildItem(titleText, artistText, tuningText, youtubeUrl, lyricsText, storageKey, isCustom = false, addedBy = '', addedAt = '', editedBy = '', editedAt = '') {
         const item = document.createElement('div');
         item.className = 'item';
 
@@ -2578,7 +2615,11 @@ A quem sempre lhe deu a mão</div></div>
                     youtube: youtubeInput.value.trim(),
                     lyrics: lyricsTextarea.value,
                     isCustom: item._isCustom,
-                    isDeleted: false
+                    isDeleted: false,
+                    addedBy: item._addedBy,
+                    addedAt: item._addedAt,
+                    editedBy: item._editedBy,
+                    editedAt: item._editedAt
                 });
                 item.remove();
                 sortAndNumber();
@@ -2587,6 +2628,21 @@ A quem sempre lhe deu a mão</div></div>
 
         editPanel.appendChild(saveBtn);
         editPanel.appendChild(deleteBtn);
+
+        const metadataDiv = document.createElement('div');
+        metadataDiv.className = 'song-metadata';
+        metadataDiv.style.cssText = 'margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 0.9em; color: var(--text-secondary); line-height: 1.4;';
+        
+        const addedByEl = document.createElement('div');
+        addedByEl.innerHTML = `<strong>Added by:</strong> ${addedBy}<br/><strong>Date:</strong> ${addedAt}`;
+        
+        const editedDiv = document.createElement('div');
+        editedDiv.style.marginTop = '8px';
+        editedDiv.innerHTML = `<strong>Last edited by:</strong> ${editedBy || 'Not yet edited'}<br/><strong>Date:</strong> ${editedAt || 'N/A'}`;
+        
+        metadataDiv.appendChild(addedByEl);
+        metadataDiv.appendChild(editedDiv);
+        editPanel.appendChild(metadataDiv);
 
         content.appendChild(youtubeLinkEl);
         content.appendChild(editBtn);
@@ -2636,6 +2692,11 @@ A quem sempre lhe deu a mão</div></div>
             youtubeLinkEl.href = newYoutube;
             youtubeLinkEl.style.display = newYoutube ? '' : 'none';
 
+            const now = new Date();
+            const dateString = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const timestamp = `${dateString} at ${timeString}`;
+
             await persistSong({
                 storageKey,
                 title: newTitle,
@@ -2644,8 +2705,19 @@ A quem sempre lhe deu a mão</div></div>
                 youtube: newYoutube,
                 lyrics: newLyrics,
                 isCustom: item._isCustom,
-                isDeleted: false
+                isDeleted: false,
+                addedBy: item._addedBy,
+                addedAt: item._addedAt,
+                editedBy: 'Pedro de Janeiro',
+                editedAt: timestamp
             });
+
+            item._editedBy = 'Pedro de Janeiro';
+            item._editedAt = timestamp;
+            const editedDiv = metadataDiv.querySelector('div:last-child');
+            if (editedDiv) {
+                editedDiv.innerHTML = `<strong>Last edited by:</strong> Pedro de Janeiro<br/><strong>Date:</strong> ${timestamp}`;
+            }
 
             editPanel.classList.remove('open');
             editBtn.textContent = '✏️ Edit';
@@ -2660,6 +2732,10 @@ A quem sempre lhe deu a mão</div></div>
         item._storageKey = storageKey;
         item._isCustom = isCustom;
         item._sortTitle = titleText.toLowerCase();
+        item._addedBy = addedBy;
+        item._addedAt = addedAt;
+        item._editedBy = editedBy;
+        item._editedAt = editedAt;
         updateWriteControlsState();
 
         return item;
@@ -2682,7 +2758,35 @@ A quem sempre lhe deu a mão</div></div>
         });
     }
 
+    async function syncMetadataToSupabase() {
+        if (!supabaseClient) return;
+        
+        const localSongs = loadLocalSongRecords();
+        for (const song of localSongs) {
+            if (song.addedBy && song.addedAt) {
+                const { error } = await supabaseClient.from('songs').upsert({
+                    storage_key: song.storageKey,
+                    title: song.title,
+                    artist: song.artist,
+                    tuning: song.tuning,
+                    youtube: song.youtube,
+                    lyrics: song.lyrics,
+                    is_custom: song.isCustom,
+                    is_deleted: song.isDeleted,
+                    added_by: song.addedBy,
+                    added_at: song.addedAt,
+                    edited_by: song.editedBy || '',
+                    edited_at: song.editedAt || ''
+                }, {
+                    onConflict: 'storage_key'
+                });
+                if (error) console.error('Metadata sync failed for', song.storageKey, error);
+            }
+        }
+    }
+
     async function initializeSongs() {
+        await syncMetadataToSupabase();
         const storedSongs = await loadStoredSongRecords();
         const storedSongMap = new Map(storedSongs.map(song => [song.storageKey, song]));
 
@@ -2714,8 +2818,12 @@ A quem sempre lhe deu a mão</div></div>
             const currentTuning = storedSong ? storedSong.tuning : originalTuning;
             const currentYoutube = storedSong ? storedSong.youtube : '';
             const currentLyrics = storedSong ? storedSong.lyrics : originalLyrics;
+            const currentAddedBy = storedSong ? storedSong.addedBy : '';
+            const currentAddedAt = storedSong ? storedSong.addedAt : '';
+            const currentEditedBy = storedSong ? storedSong.editedBy : '';
+            const currentEditedAt = storedSong ? storedSong.editedAt : '';
 
-            const newItem = buildItem(currentTitle, currentArtist, currentTuning, currentYoutube, currentLyrics, storageKey, false);
+            const newItem = buildItem(currentTitle, currentArtist, currentTuning, currentYoutube, currentLyrics, storageKey, false, currentAddedBy, currentAddedAt, currentEditedBy, currentEditedAt);
             item.replaceWith(newItem);
         });
 
@@ -2731,7 +2839,11 @@ A quem sempre lhe deu a mão</div></div>
                 song.youtube,
                 song.lyrics,
                 song.storageKey,
-                true
+                true,
+                song.addedBy,
+                song.addedAt,
+                song.editedBy,
+                song.editedAt
             );
             container.appendChild(newItem);
         });
@@ -2740,6 +2852,7 @@ A quem sempre lhe deu a mão</div></div>
     }
 
     initializeAuth();
+    initializeMissingMetadata();
     initializeSongs();
 
     // Add song modal
@@ -2779,6 +2892,11 @@ A quem sempre lhe deu a mão</div></div>
 
         if (!title) { document.getElementById('newTitle').focus(); return; }
 
+        const now = new Date();
+        const dateString = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        const timestamp = `${dateString} at ${timeString}`;
+
         const storageKey = 'song_' + title.toLowerCase().replace(/\s+/g, '_');
         await persistSong({
             storageKey,
@@ -2788,10 +2906,14 @@ A quem sempre lhe deu a mão</div></div>
             youtube,
             lyrics,
             isCustom: true,
-            isDeleted: false
+            isDeleted: false,
+            addedBy: 'Pedro de Janeiro',
+            addedAt: timestamp,
+            editedBy: '',
+            editedAt: ''
         });
 
-        const newItem = buildItem(title, artist, tuning, youtube, lyrics, storageKey, true);
+        const newItem = buildItem(title, artist, tuning, youtube, lyrics, storageKey, true, 'Pedro de Janeiro', timestamp, '', '');
         container.appendChild(newItem);
         sortAndNumber();
 
