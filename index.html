@@ -37,6 +37,10 @@
         .modal-secondary:hover { border-color: var(--accent); color: var(--accent); }
 		.modal-save { flex: 2; padding: 12px; background: var(--accent); border: none; border-radius: 20px; font-size: 15px; font-weight: 600; color: white; cursor: pointer; transition: 0.2s; }
 		.modal-save:hover { opacity: 0.85; }
+        .auth-help { margin: 12px 0 10px 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+        .auth-message { min-height: 18px; margin: 6px 0 0 0; font-size: 12px; color: var(--muted); }
+        .auth-message.error { color: #e33; }
+        .auth-message.success { color: #2d9b55; }
         .container { width: 100%; max-width: 800px; margin: 0 auto 50px auto; background: var(--white); box-shadow: 0 10px 40px rgba(0,0,0,0.05); border-radius: 15px; overflow: hidden; }
         .item { border-bottom: 1px solid var(--item-border); }
         .btn { width: 100%; padding: 25px 30px; background: none; border: none; display: flex; justify-content: space-between; align-items: center; cursor: pointer; text-align: left; font-size: 18px; font-weight: 600; color: var(--text); transition: 0.2s; }
@@ -103,14 +107,16 @@
 
 <div class="modal-overlay" id="authModalOverlay">
     <div class="modal">
-        <h2>Admin Login</h2>
+        <h2>Login / Sign Up</h2>
+        <p class="auth-help">Use Sign Up to create a new editor account, then Login to edit songs.</p>
         <label>Email</label>
         <input type="email" id="authEmail" placeholder="admin@email.com">
         <label>Password</label>
         <input type="password" id="authPassword" placeholder="••••••••">
+        <p id="authMessage" class="auth-message"></p>
         <div class="modal-buttons">
             <button class="modal-cancel" id="authCancel">Cancel</button>
-            <button class="modal-secondary" id="authSignup">Sign Up</button>
+            <button class="modal-secondary" id="authSignup">Create Account</button>
             <button class="modal-save" id="authLogin">Login</button>
         </div>
     </div>
@@ -2112,6 +2118,9 @@ A quem sempre lhe deu a mão</div></div>
     const authModalOverlay = document.getElementById('authModalOverlay');
     const authEmailInput = document.getElementById('authEmail');
     const authPasswordInput = document.getElementById('authPassword');
+    const authMessage = document.getElementById('authMessage');
+    const authLoginBtn = document.getElementById('authLogin');
+    const authSignupBtn = document.getElementById('authSignup');
     const supabaseConfig = {
         url: 'https://znzgfuqnxixmflgswqoi.supabase.co',
         anonKey: 'sb_publishable_I8rXUFh2r7M8QxC6RBjIAg_3PVA68Z5'
@@ -2182,6 +2191,18 @@ A quem sempre lhe deu a mão</div></div>
         return false;
     }
 
+    function setAuthMessage(message, type = '') {
+        authMessage.textContent = message;
+        authMessage.className = 'auth-message' + (type ? ' ' + type : '');
+    }
+
+    function setAuthBusy(isBusy) {
+        authEmailInput.disabled = isBusy;
+        authPasswordInput.disabled = isBusy;
+        authLoginBtn.disabled = isBusy;
+        authSignupBtn.disabled = isBusy;
+    }
+
     async function initializeAuth() {
         if (!supabaseClient) {
             updateAuthUi();
@@ -2214,11 +2235,13 @@ A quem sempre lhe deu a mão</div></div>
 
         authEmailInput.value = '';
         authPasswordInput.value = '';
+        setAuthMessage('Enter email/password, then choose Login or Create Account.');
         authModalOverlay.classList.add('open');
         authEmailInput.focus();
     });
 
     document.getElementById('authCancel').addEventListener('click', () => {
+        setAuthMessage('');
         authModalOverlay.classList.remove('open');
     });
 
@@ -2233,15 +2256,20 @@ A quem sempre lhe deu a mão</div></div>
         const password = authPasswordInput.value;
 
         if (!email || !password) {
+            setAuthMessage('Email and password are required.', 'error');
             return;
         }
 
+        setAuthBusy(true);
+        setAuthMessage('Logging in...');
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        setAuthBusy(false);
         if (error) {
-            alert('Login failed: ' + error.message);
+            setAuthMessage('Login failed: ' + error.message, 'error');
             return;
         }
 
+        setAuthMessage('Login successful.', 'success');
         authModalOverlay.classList.remove('open');
     });
 
@@ -2250,17 +2278,32 @@ A quem sempre lhe deu a mão</div></div>
         const password = authPasswordInput.value;
 
         if (!email || !password) {
+            setAuthMessage('Email and password are required.', 'error');
             return;
         }
 
-        const { error } = await supabaseClient.auth.signUp({ email, password });
+        setAuthBusy(true);
+        setAuthMessage('Creating account...');
+        const { data, error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: {
+                emailRedirectTo: window.location.origin + window.location.pathname
+            }
+        });
+        setAuthBusy(false);
         if (error) {
-            alert('Signup failed: ' + error.message);
+            setAuthMessage('Signup failed: ' + error.message, 'error');
             return;
         }
 
-        authModalOverlay.classList.remove('open');
-        alert('Signup successful. You can now log in.');
+        if (data && data.session) {
+            setAuthMessage('Signup successful and logged in.', 'success');
+            authModalOverlay.classList.remove('open');
+            return;
+        }
+
+        setAuthMessage('Signup successful. Check your email to confirm, then log in.', 'success');
     });
 
     const customSongsStorageKey = 'custom_song_keys';
