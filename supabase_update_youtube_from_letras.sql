@@ -1,0 +1,23 @@
+﻿-- Generated from Letras scrape on 2026-03-20
+begin;
+update songs set youtube = 'https://www.youtube.com/watch?v=FxQB1FYLu5k' where storage_key = 'song_canta_canta_minha_gente';
+update songs set youtube = 'https://www.youtube.com/watch?v=Dx5Lm13eLm8' where storage_key = 'song_carnavália';
+update songs set youtube = 'https://www.youtube.com/watch?v=Dx5Lm13eLm8' where storage_key = 'song_casa_de_samba_(no_meu_canto)';
+update songs set youtube = 'https://www.youtube.com/watch?v=QTTnL5EllD8' where storage_key = 'song_chega_de_saudade';
+update songs set youtube = 'https://www.youtube.com/watch?v=CTIvQ4KGtKM' where storage_key = 'song_conselho';
+update songs set youtube = 'https://www.youtube.com/watch?v=oTREAvZbmME' where storage_key = 'song_deixa_a_vida_me_levar';
+update songs set youtube = 'https://www.youtube.com/watch?v=IZSVMni4xOo' where storage_key = 'song_doce_refúgio';
+update songs set youtube = 'https://www.youtube.com/watch?v=BEVX5Aum85A' where storage_key = 'song_espelho';
+update songs set youtube = 'https://www.youtube.com/watch?v=aC1QBmYVMCc' where storage_key = 'song_falsa_consideração';
+update songs set youtube = 'https://www.youtube.com/watch?v=aC1QBmYVMCc' where storage_key = 'song_feitiço_da_vila';
+update songs set youtube = 'https://www.youtube.com/watch?v=oSf5GVv7lvQ' where storage_key = 'song_folhas_secas';
+update songs set youtube = 'https://www.youtube.com/watch?v=PLjXaoceEY8' where storage_key = 'song_malandro';
+update songs set youtube = 'https://www.youtube.com/watch?v=hHutLqLE0iU' where storage_key = 'song_maneiras';
+update songs set youtube = 'https://www.youtube.com/watch?v=sy-DPcwWRXM' where storage_key = 'song_não_deixe_o_samba_morrer';
+update songs set youtube = 'https://www.youtube.com/watch?v=ud9PlROstDw' where storage_key = 'song_o_mundo_é_um_moinho';
+update songs set youtube = 'https://www.youtube.com/watch?v=c3i7WCrnMEI' where storage_key = 'song_o_show_tem_que_continuar';
+update songs set youtube = 'https://www.youtube.com/watch?v=qkdbFsSIGSI' where storage_key = 'song_país_tropical';
+update songs set youtube = 'https://www.youtube.com/watch?v=h8PQQvNn6aI' where storage_key = 'song_pé_na_areia';
+update songs set youtube = 'https://www.youtube.com/watch?v=iyJDuJggiEM' where storage_key = 'song_velha_infância';
+update songs set youtube = 'https://www.youtube.com/watch?v=iyJDuJggiEM' where storage_key = 'song_vou_festejar';
+commit;
