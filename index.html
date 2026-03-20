@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diego Samba - Repertório Oficial</title>
+    <style>
+        :root { --bg: #f4f4f2; --white: #ffffff; --accent: #d4af37; --text: #222; --gray: #666; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: var(--text); }
+        header { text-align: center; padding: 40px 20px 20px 20px; }
+        header h1 { font-size: 42px; margin: 0; font-family: serif; letter-spacing: -1px; }
+       .search-container { width: 100%; max-width: 800px; margin: 0 auto 20px auto; padding: 0 20px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; }
+		#searchInput { flex: 1; padding: 18px; font-size: 16px; border: 1px solid #ddd; border-radius: 50px; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; box-sizing: border-box; }
+		#searchInput:focus { border-color: var(--accent); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2); }
+		#addSongBtn { flex-shrink: 0; width: 50px; height: 50px; border-radius: 50%; background: var(--accent); border: none; color: white; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: 0.2s; line-height: 1; }
+		#addSongBtn:hover { opacity: 0.85; transform: scale(1.05); }
+
+		/* Modal */
+		.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+		.modal-overlay.open { display: flex; }
+		.modal { background: white; border-radius: 15px; padding: 40px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); margin: 20px; box-sizing: border-box; }
+		.modal h2 { margin: 0 0 24px 0; font-family: serif; font-size: 26px; color: var(--text); }
+		.modal label { display: block; font-size: 13px; color: #aaa; margin-bottom: 4px; margin-top: 16px; }
+		.modal input, .modal textarea { width: 100%; padding: 10px 14px; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; color: var(--text); outline: none; transition: 0.2s; }
+		.modal input:focus, .modal textarea:focus { border-color: var(--accent); }
+		.modal textarea { height: 300px; resize: vertical; line-height: 1.8; }
+		.modal-buttons { display: flex; gap: 10px; margin-top: 24px; }
+		.modal-cancel { flex: 1; padding: 12px; background: none; border: 1px solid #ddd; border-radius: 20px; font-size: 15px; color: #aaa; cursor: pointer; transition: 0.2s; }
+		.modal-cancel:hover { border-color: #bbb; color: #888; }
+		.modal-save { flex: 2; padding: 12px; background: var(--accent); border: none; border-radius: 20px; font-size: 15px; font-weight: 600; color: white; cursor: pointer; transition: 0.2s; }
+		.modal-save:hover { opacity: 0.85; }
+        .container { width: 100%; max-width: 800px; margin: 0 auto 50px auto; background: var(--white); box-shadow: 0 10px 40px rgba(0,0,0,0.05); border-radius: 15px; overflow: hidden; }
+        .item { border-bottom: 1px solid #f0f0f0; }
+        .btn { width: 100%; padding: 25px 30px; background: none; border: none; display: flex; justify-content: space-between; align-items: center; cursor: pointer; text-align: left; font-size: 18px; font-weight: 600; color: var(--text); transition: 0.2s; }
+        .btn:hover { background-color: #fafafa; }
+        .btn.active { color: var(--accent); border-left: 6px solid var(--accent); background-color: #fdfdfd; }
+        .icon { font-size: 20px; color: #ccc; transition: 0.3s; flex-shrink: 0; margin-left: 10px; }
+        .active .icon { transform: rotate(45deg); color: var(--accent); }
+        .content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; background-color: #fff; }
+        .lyrics { padding: 0 40px 40px 40px; line-height: 2; font-size: 17px; color: var(--gray); white-space: pre-wrap; }
+		.artist { font-size: 13px; font-weight: 400; color: #aaa; margin-left: auto; padding-left: 10px; text-align: right; flex-shrink: 0; }
+		.edit-btn { margin: 0 40px 20px 40px; padding: 8px 18px; background: none; border: 1px solid #ddd; border-radius: 20px; font-size: 13px; color: #aaa; cursor: pointer; transition: 0.2s; }
+		.edit-btn:hover { border-color: var(--accent); color: var(--accent); }
+		.edit-panel { display: none; padding: 0 40px 30px 40px; }
+		.edit-panel.open { display: block; }
+		.edit-panel label { display: block; font-size: 13px; color: #aaa; margin-bottom: 4px; margin-top: 16px; }
+		.edit-panel input, .edit-panel textarea { width: 100%; padding: 10px 14px; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; color: var(--text); outline: none; transition: 0.2s; }
+		.edit-panel input:focus, .edit-panel textarea:focus { border-color: var(--accent); }
+		.edit-panel textarea { height: 300px; resize: vertical; line-height: 1.8; white-space: pre; }
+		.save-btn { margin-top: 16px; padding: 10px 24px; background: var(--accent); border: none; border-radius: 20px; font-size: 14px; color: white; cursor: pointer; font-weight: 600; transition: 0.2s; }
+		.save-btn:hover { opacity: 0.85; }
+		.delete-btn { margin-top: 12px; padding: 10px 24px; background: none; border: 1px solid #ffcccc; border-radius: 20px; font-size: 14px; color: #e88; cursor: pointer; transition: 0.2s; display: block; }
+		.delete-btn:hover { background: #fff0f0; border-color: #e88; color: #c00; }
+		.tuning-badge { font-size: 11px; font-weight: 600; color: var(--accent); background: rgba(212,175,55,0.12); padding: 2px 8px; border-radius: 20px; margin: 0 8px; border: 1px solid rgba(212,175,55,0.25); flex-shrink: 0; white-space: nowrap; }
+        footer { text-align: center; padding: 40px; font-size: 14px; color: #bbb; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Diego Samba</h1>
+</header>
+
+<div class="search-container">
+    <input type="text" id="searchInput" onkeyup="searchSongs()" placeholder="Buscar música, artista ou tom...">
+    <button id="addSongBtn" title="Add new song">+</button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h2>Add New Song</h2>
+        <label>Song Title</label>
+        <input type="text" id="newTitle" placeholder="e.g. Aquarela do Brasil">
+        <label>Artist</label>
+        <input type="text" id="newArtist" placeholder="e.g. Ary Barroso">
+        <label>Tuning (Tom)</label>
+        <input type="text" id="newTuning" placeholder="e.g. Sol Maior">
+        <label>Lyrics</label>
+        <textarea id="newLyrics" placeholder="Paste lyrics here..."></textarea>
+        <div class="modal-buttons">
+            <button class="modal-cancel" id="modalCancel">Cancel</button>
+            <button class="modal-save" id="modalSave">Add Song</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="songList">
+
+    <div class="item">
+        <button class="btn">A Chuva Cai <span class="artist">Beth Carvalho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">A chuva cai lá fora
+Você vai se molhar
+Já lhe pedi, não vai embora
+Espere o tempo melhorar
+
+Até a própria natureza
+Está pedindo pra você ficar
+Atenda o apelo desse alguém que lhe adora
+
+Espere um pouco
+Não vá agora
+Você ficando vai fazer feliz um coração
+Que está cansado de sofrer desilusão
+
+Espero que a natureza
+Faça você mudar de opinião</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">A Cigana Leu o Meu Destino (O Amanhã) <span class="artist">Simone</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">A cigana leu o meu destino
+Eu sonhei!
+Bola de cristal
+Jogo de búzios, cartomante
+E eu sempre perguntei
+O que será o amanhã?
+Como vai ser o meu destino?
+Já desfolhei o mal-me-quer
+Primeiro amor de um menino...
+
+E vai chegando o amanhecer
+Leio a mensagem zodiacal
+E o realejo diz
+Que eu serei feliz
+Sempre feliz...
+
+Como será amanhã?
+Responda quem puder
+O que irá me acontecer?
+O meu destino será
+Como Deus quiser
+Como será?...
+
+A cigana leu o meu destino
+Eu sonhei!
+Bola de cristal
+Jogo de búzios, cartomante
+Eu sempre perguntei
+O que será? (O que será?)
+O amanhã? (O Amanhã?)
+Como vai ser? (Como vai ser?)
+O meu destino?
+Já desfolhei (Já desfolhei!)
+O mal-me-quer (O mal-me-quer!)
+Primeiro amor (Primeiro amor!)
+De um menino...
+
+E vai chegando o amanhecer
+Leio a mensagem zodiacal
+E o realejo diz
+Que eu serei feliz
+Sempre feliz...
+
+Como será amanhã?
+Responda quem puder
+O que irá me acontecer?
+O meu destino será
+Como Deus quiser
+Como será?...</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Acreditar Eu Não <span class="artist">Dona Ivone Lara</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Acreditar, eu não
+Recomeçar, jamais
+A vida foi em frente
+E você simplesmente não viu que ficou pra trás
+
+Não sei se você me enganou
+Pois quando você tropeçou
+Não viu o tempo que passou
+Não viu que ele lhe carregava
+E a saudade lhe entregava
+Com aval da imensa dor
+
+E eu que agora moro nos braços da paz
+Ignoro o passado que hoje você me traz
+E eu que agora moro nos braços da paz
+Ignoro o passado que hoje você me traz</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Ai Tem Std <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item" data-tuning="Sol Menor">
+        <button class="btn">Amor Agora Não <span class="artist">Fundo de Quintal</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Chega pra lá novo amor
+Vai procurar novo abrigo
+Meu coração se cansou
+E quer fugir do perigo
+
+Cada paixão só resulta
+Sempre em desilusão
+Sonhos que vão rolar pelo chão
+
+E nada poderá conter
+Meu ímpeto de ter
+Fechado o coração
+Eu sei que vai ser bem melhor
+Ficar um tempo só
+Amor, agora não</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Aquarela Brasileira <span class="artist">Silas de Oliveira</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Vejam esta maravilha de cenário
+É um episódio relicário
+Que o artista num sonho genial
+Escolheu para este carnaval
+E o asfalto como passarela
+Será a tela
+Do Brasil em forma de aquarela
+
+Passeando pelas cercanias do Amazonas
+Conheci vastos seringais
+No Pará, a ilha de Marajó
+E a velha cabana do Timbó
+Caminhando ainda um pouco mais
+Deparei com lindos coqueirais
+Estava no Ceará, terra de Irapuã
+De Iracema e Tupã
+
+Fiquei radiante de alegria
+Quando cheguei na Bahia
+Bahia de Castro Alves, do acarajé
+Das noites de magia do Candomblé
+Depois de atravessar as matas do Ipu
+Assisti em Pernambuco à Festa do Frevo e do Maracatu
+Brasileira, tão brasileira
+
+Lá encontrei Minas Gerais
+Paisagens sem igual!
+Meu São Francisco, Rio Vital
+Vi no Paraná a água a rolar
+E contemplando a natureza
+Descobri a Cidade Sorriso
+Curitiba, meu paraíso
+
+E dos pampas, lá no Sul
+Surge a garra do Rio Grande do Sul
+Cruzei o mato-grosso da esperança
+E o Rio de Janeiro, que beleza
+No Pão de Açúcar vejo a natureza
+E o meu Brasil, samba que dá
+Bamboleio que faz gingar
+O Brasil do meu amor
+Terra de Nosso Senhor
+Brasil! Brasil!
+Pra mim, pra mim, pra mim</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Arerê <span class="artist">Beth Carvalho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Me leve pra seu terreiro
+Me faça um verdadeiro arerê
+Me leve pra seu terreiro
+Me faça um verdadeiro arerê
+
+Dê uma chance pra esse moço sonhador
+Que só quer ser o seu amor
+E se for fantasia
+Deixa eu sonhar, deixa eu sonhar
+
+Faz de conta que ainda é cedo
+Tudo vai se resolver
+O mundo inteiro passa em um segundo
+Quando você me faz arerê
+
+Me leve pra seu terreiro
+Me faça um verdadeiro arerê
+Me leve pra seu terreiro
+Me faça um verdadeiro arerê
+
+Eu quero ver
+Você deixar laia laia
+Eu quero ver
+Você cair na gandaia
+Vem me zoar
+Vem que eu tô legal
+Vem que eu tô legal
+Vem que eu tô legal
+
+Me leve pra seu terreiro
+Me faça um verdadeiro arerê
+Me leve pra seu terreiro
+Me faça um verdadeiro arerê</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Ardido Peito (Pressentimento) <span class="artist">Elton Medeiros / Hermínio Bello de Carvalho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Ai! Ardido peito
+Quem irá entender o teu segredo?
+Quem irá pousar em teu destino
+E depois morrer do teu amor?
+
+Ai! Mas quem virá?
+Me pergunto a toda hora
+E a resposta é o silêncio
+Que atravessa a madrugada
+
+Vem, meu novo amor
+Vou deixar a casa aberta
+Já escuto os teus passos
+Procurando meu abrigo
+
+Vem, que o sol raiou
+Os jardins estão florindo
+Tudo faz pressentimento
+Que este é o tempo ansiado
+De se ter felicidade</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">A Batucada dos Nossos Tantãs <span class="artist">Exaltasamba</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Samba, a gente não perde o prazer de cantar
+E fazem de tudo pra silenciar
+A batucada dos nossos tantãs
+No seu ecoar, o samba se refez
+Seu canto se faz reluzir
+Podemos sorrir outra vez
+
+Samba, eterno delírio do compositor
+Que nasce da alma, sem pele, sem cor
+Com simplicidade, não sendo vulgar
+Fazendo da nossa alegria
+Seu habitat natural
+O samba floresce do fundo do nosso quintal
+
+Este samba é pra você
+Que vive a falar, a criticar
+Querendo esnobar, querendo acabar
+Com a nossa cultura popular
+
+É bonito de se ver
+O samba correr, pro lado de lá
+Fronteira não há, pra nos impedir
+Você não samba mas tem que aplaudir</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Canta Canta Minha Gente <span class="artist">Martinho da Vila</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Canta, canta minha gente
+Deixa a tristeza pra lá
+Canta forte, canta alto
+Que a vida vai melhorar
+
+Canta, canta minha gente
+Deixa a tristeza pra lá
+Canta forte, canta alto
+Que a vida vai melhorar
+
+Quem canta seus males espanta
+Lá em cima do morro
+Ou sambando aqui no asfalto
+Eu canto pra me alegrar
+
+Quando estou contente também canto
+Pois sei que a vida de cantor
+Nem sempre é só cantar
+
+Mas se não tiver o motivo
+Qualquer coisa me invento
+Eu canto só pelo gosto de cantar
+
+Canta, canta minha gente
+Deixa a tristeza pra lá
+Canta forte, canta alto
+Que a vida vai melhorar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Camarão Que Dorme a Onda Leva <span class="artist">Zeca Pagodinho / Beth Carvalho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Não pense que o meu coração é de papel
+Não brinque com o meu interior
+Camarão que dorme a onda leva
+Hoje é o dia da caça, amanhã do caçador
+
+Camarão que dorme a onda leva
+Hoje é o dia da caça, amanhã do caçador
+
+Não quero que o nosso amor acabe assim
+Um coração, quando ama é sempre amigo
+Só não faça gato e sapato de mim
+Pois aquele que dá pão também dá castigo
+
+Não veja meu sentimento com desdém
+Enquanto o bem existir, o mal tem cura
+A pedra é muito forte
+Mas tem um porém, meu bem
+A água tanto bate até que fura
+
+Camarão que dorme a onda leva
+Hoje é o dia da caça, amanhã do caçador</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Carnavália <span class="artist">Tribalistas</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">O que é que eu vou fazer com essa tal liberdade
+Se estou na solidão pensando em você
+Eu nunca imaginei sentir tanta saudade
+Meu coração não sabe como te esquecer
+
+Eu andei errado, eu pisei na bola
+Troquei quem mais amava por uma ilusão
+Mas a gente aprende a vida é uma escola
+Não é assim que acaba uma grande paixão
+
+Quero te abraçar
+Quero te beijar
+Te desejo noite e dia
+Quero me prender
+Todo em você
+Você é tudo o que eu queria
+
+Lalaiá, lalaiá, lalaiá, lalaiá...
+
+Vivendo nesse mundo de aparências
+Enganando a consciência
+Destruindo o coração
+Não quero mais viver tão dividido
+Chega de amor fingido
+Eu vou lutar pelo amor
+
+Quero te abraçar
+Quero te beijar
+Te desejo noite e dia
+Quero me prender
+Todo em você
+Você é tudo o que eu queria
+
+Lalaiá, lalaiá, lalaiá, lalaiá...</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Casa de Samba (No Meu Canto) <span class="artist">Almir Guineto</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">No meu canto eu sou mais feliz
+Ninguém sabe onde eu moro
+Falo pouco, penso muito
+Mas, por Deus, não me revolto
+
+Quero apenas ser amigo
+Se fui bem ou mal tratado
+Já virou passado
+Dou de ombros, fico calado
+
+Sei sorrir, sei perdoar
+Sei pedir, sei implorar
+Não preciso humilhar ninguém
+
+Se errei, peço desculpas
+Se feri, não foi de maldade
+Foi medo, foi sede de felicidade
+
+O importante é estar de bem
+Com Deus e com a consciência
+
+Tenho tudo, não tenho nada
+Compro briga pra não ver briga
+Solidariedade, muito amor, vida
+
+Eu sou Flamengo, eu sou Mangueira
+Eu sou filho do Criador
+Sou brasileiro de alma e corpo inteiro
+
+No meu canto eu sou mais feliz!</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Chega de Saudade <span class="artist">João Gilberto</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Vai minha tristeza
+E diz a ela que sem ela não pode ser
+Diz-lhe numa prece
+Que ela regresse
+Porque eu não posso mais sofrer
+
+Chega de saudade
+A realidade é que sem ela
+Não há paz, não há beleza
+É só tristeza e a melancolia
+Que não sai de mim, não sai de mim
+
+⚠️ Letra completa disponível em letras.com/joao-gilberto</div></div>
+    </div>
+
+    <div class="item" data-tuning="Sol Maior">
+        <button class="btn">Conselho <span class="artist">Almir Guineto</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Deixe de lado esse baixo astral
+Erga a cabeça, enfrente o mal
+Que agindo assim será vital
+Para o seu coração
+É que em cada experiência
+Se aprende uma lição
+
+Eu já sofri por amar assim
+Me dediquei, mas foi tudo em vão
+Pra que se lamentar
+Se em sua vida pode encontrar
+Quem te ame com toda força e ardor
+Assim sucumbirá a dor
+
+Tem que lutar, não se abater
+Só se entregar a quem te merecer
+Não estou dando, nem vendendo
+Como o ditado diz
+O meu conselho é pra te ver feliz
+
+Tem que lutar, não se abater
+Só se entregar a quem te merecer
+Não estou dando, nem vendendo
+Como o ditado diz
+O meu conselho é pra te ver feliz
+
+Lararaia
+Laia laia, laia laia, laia laia
+Não estou dando, nem vendendo
+Como o ditado diz
+O meu conselho é pra te ver feliz
+O meu conselho é pra te ver feliz
+O meu conselho é pra te ver feliz</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Deixa a Vida Me Levar <span class="artist">Zeca Pagodinho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Eu já passei por quase tudo nessa vida
+Em matéria de guarida, espero ainda a minha vez
+Confesso que sou de origem pobre
+Mas meu coração é nobre, foi assim que Deus me fez
+
+Deixa a vida me levar (vida, leva eu)
+Deixa a vida me levar (vida, leva eu)
+Deixa a vida me levar (vida, leva eu)
+Sou feliz e agradeço por tudo que Deus me deu
+
+Só posso levantar as mãos pro céu
+Agradecer e ser fiel ao destino que Deus me deu
+Se não tenho tudo que preciso
+Com o que tenho, vivo
+De mansinho lá vou eu
+
+Se a coisa não sai do jeito que eu quero
+Também não me desespero
+O negócio é deixar rolar
+E aos trancos e barrancos lá vou eu
+
+Deixa a vida me levar (vida, leva eu)
+Deixa a vida me levar (vida, leva eu)
+Deixa a vida me levar (vida, leva eu)
+Sou feliz e agradeço por tudo que Deus me deu</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Deixe Me Ir Preciso Andar <span class="artist">Agepê</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Deixe-me ir, preciso andar
+Vou por aí a procurar
+Rir pra não chorar
+
+Deixe-me ir, preciso andar
+Vou por aí a procurar
+Rir pra não chorar
+
+Quero assistir ao sol nascer
+Ver as águas dos rios correr
+Ouvir os pássaros cantar
+Eu quero nascer, quero viver
+
+Deixe-me ir, preciso andar
+Vou por aí a procurar
+Rir pra não chorar
+
+Se alguém por mim perguntar
+Diga que eu só vou voltar
+Depois que me encontrar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Descobri Que Te Amo Demais <span class="artist">Zeca Pagodinho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Descobri que te amo demais
+Descobri em você minha paz
+Descobri sem querer a vida
+Vendo o tempo sofrer por nada
+Fui buscar alguém para me dar
+Um amor, uma paixão
+E encontrei você
+
+Amor que mexe com minha cabeça
+E me leva e me deixa
+Confuso demais
+
+Amor que veio para ficar
+Dividir e somar
+Multiplicar jamais
+Está no brilho dos seus olhos
+Quem ama não trai
+É simples demais
+Está no toque da pele
+Um amor que é amor não se entrega jamais
+
+Descobri que te amo demais
+Descobri em você minha paz
+Descobri sem querer a vida
+Vendo o tempo sofrer por nada
+Fui buscar alguém para me dar
+Um amor, uma paixão
+E encontrei você
+
+Amor que mexe com minha cabeça
+E me leva e me deixa
+Confuso demais
+
+Amor que veio pra ficar
+Dividir e somar
+Multiplicar jamais
+Está no brilho dos seus olhos
+Quem ama não trai
+É simples demais
+Está no toque da pele
+Um amor que é amor
+Não se entrega jamais</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Destino <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Do Fundo do Nosso Quintal <span class="artist">Jorge Aragão</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Mais um pouco e vai clarear
+Nos encontraremos outra vez
+Com certeza nada apagará
+Esse brilho de vocês
+O carinho dedicado a nós
+Derramamos pela nossa voz
+Cantando alegria de não estarmos sós
+
+Boa noite, boa noite
+Pra quem se encontrou no amor
+Boa noite, boa noite
+Pra quem não desencantou
+Boa noite, boa noite
+Pra quem veio só sambar
+Boa noite, boa noite
+Batendo no pé e na palma da mão
+Boa noite, boa noite
+Pra quem só sentiu saudade afinal
+Obrigado do fundo do nosso quintal
+
+Mais um pouco e vai clarear
+Nos encontraremos outra vez
+Com certeza nada apagará
+Esse brilho de vocês
+O carinho dedicado a nós
+Derramamos pela nossa voz
+Cantando alegria de não estarmos sós
+
+Boa noite, boa noite
+Pra quem se encontrou no amor
+Boa noite, boa noite
+Pra quem não desencantou
+Boa noite, boa noite
+Pra quem veio só sambar
+Boa noite, boa noite
+Batendo no pé e na palma da mão
+Boa noite, boa noite
+Pra quem só sentiu saudade afinal
+Obrigado do fundo do nosso quintal
+
+Obrigado do fundo do nosso quintal
+Obrigado do fundo do nosso quintal
+Mais um pouco vai clarear</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Do Jeito Que a Vida Quer <span class="artist">Beth Carvalho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Você errou
+Jogou fora o amor que eu te dei
+O sonho que sonhei, isso não se faz
+
+Você brincou com alguém que s��
+Te deu amor, amor que nunca faltou
+Só que você não quis saber
+Dos meus sentimentos
+E agora vem me procurando
+Chorando, querendo voltar atrás
+
+E se pra você não fui nada
+Eu vou te mostrar
+Que posso ser feliz
+Do jeito que a vida quer
+
+Sei que vou sofrer
+Mas não vou me entregar
+Agora é a sua vez
+De implorar, de implorar o meu amor</div></div>
+    </div>
+
+    <div class="item" data-tuning="Sol Maior">
+        <button class="btn">Doce Refúgio <span class="artist">Fundo de Quintal</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">É o Cacique de Ramos
+Planta onde, em todos os ramos
+Cantam os passarinhos das manhãs
+Lá, do samba é alta bandeira
+E até as tamarineiras
+São, da poesia, guardiãs
+
+Seus compositores, aqueles
+Que deixam na gente aquela emoção
+Seus ritmistas vão fundo
+Tocando bem fundo qualquer coração
+
+É uma festa brilhante
+Um lindo brilhante mais fácil de achar
+É perto de tudo, ali no subúrbio
+Um doce refúgio pra quem quer cantar
+
+É o Cacique pra uns
+A cachaça pra outros, a religião
+Se estou longe o tempo não passa
+E a saudade abraça o meu coração
+
+Quando ele vai para as ruas
+A vida flutua num sonho real
+É o povo sorrindo, Cacique esculpindo
+Com mãos de alegria o seu carnaval
+
+É o Cacique de Ramos
+Planta onde, em todos os ramos
+Cantam os passarinhos das manhãs
+Lá, do samba é alta bandeira
+E até as tamarineiras
+São, da poesia, guardiãs</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Dura Missão <span class="artist">Almir Guineto</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Lutei para encontrar o que possa curar
+Para cicatrizar essa chaga em meu peito de vez
+Lembro bem tanto anos se fez
+E não deu pra esquecer porque
+É com sinceridade, menina
+Ainda amo você
+
+Mesmo sendo pra mim tão vulgar
+Não fez jus tanto bem que eu lhe quis
+Pouco a pouco me fez infeliz
+Nem se quer teve dó
+Fiz promessas pro tempo passar
+Te esquecer foi tão dura a missão
+Consegui me livrar dessa amarga paixão, paixão
+
+E assim
+Se um dia encontrar com você
+Quero ter o prazer de dizer
+Que estou recuperado
+Bom enquanto durou
+Já pertence ao passado
+Apesar dos momentos felizes na vida
+Que eu tive ao seu lado</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">É Pois É <span class="artist">Beth Carvalho / Almir Guineto</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">É, pois é, nem o galo cantou
+E três vezes você me traiu
+Iludiu e fugiu e ainda levou
+O sonho que guardei
+De amor levou
+
+Ora, vem agora pedindo pra voltar
+Chegou fora de hora pra chorar
+Me falou do passado, que penou um bocado
+Encontrou a maior lição
+No suor de uma solidão
+
+Ora, aqui mora quem já lhe esqueceu
+A verdade é que agora sou mais eu
+E o que mais hoje eu ligo é viver bem comigo
+E por isso eu lhe digo não
+Vai curtindo na solidão</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">É Preciso Muito Amor <span class="artist">Zeca Pagodinho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">É preciso muito amor
+Para suportar essa mulher
+Tudo que ela vê numa vitrine ela quer
+Tudo que ela quer
+Tenho que dar sem reclamar
+Porque senão ela chora
+E diz que vai embora
+Ô, diz que vai embora!
+
+Pra satisfazer essa mulher
+Eu faço das tripas coração
+Pra ela sempre digo: Sim
+Pra ela nunca digo: Não
+
+Porque senão ela chora
+E diz que vai embora
+Ô, diz que vai embora!
+
+Porque senão ela chora
+E diz que vai embora
+Ô, diz que vai embora!</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Enredo do Meu Samba <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Espelho <span class="artist">João Nogueira</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Nascido no subúrbio, nos melhores dias
+Com votos da família de vida feliz
+Andar e pilotar um pássaro de aço
+Sonhava ao fim do dia ao me descer cansaço
+Com as fardas mais bonitas desse meu país
+
+O pai de anel no dedo e dedo na viola
+Sorria e parecia mesmo ser feliz
+Eh, vida boa, quanto tempo faz
+Que felicidade!
+E que vontade de tocar viola de verdade
+E de fazer canções como as que fez meu pai
+
+Num dia de tristeza me faltou o velho
+E falta lhe confesso que ainda hoje faz
+E me abracei na bola e pensei ser um dia
+Um craque da pelota ao me tornar rapaz
+Um dia chutei mal e machuquei o dedo
+E sem ter mais o velho pra tirar o medo
+Foi mais uma vontade que ficou pra trás
+
+Eh, vida à toa, vai no tempo, vai
+E eu sem ter maldade
+Na inocência de criança de tão pouca idade
+Troquei de mal com Deus por me levar meu pai
+
+E assim crescendo eu fui me criando sozinho
+Aprendendo na rua, na escola e no lar
+Um dia eu me tornei o bamba, bamba da esquina
+Em toda brincadeira, em briga, em namorar
+Até que um dia eu tive que largar o estudo
+E trabalhar na rua sustentando tudo
+Assim sem perceber eu era adulto já
+
+Eh, vida voa, vai no tempo, vai
+Ai, mas que saudade
+Mas eu sei que lá no céu o velho tem vaidade
+E orgulho de seu filho ser igual seu pai
+
+Pois me beijaram a boca e me tornei poeta
+Mas tão habituado com o adverso
+Eu temo se um dia me machuca o verso
+E o meu medo maior é o espelho se quebrar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Eu Sou o Samba <span class="artist">Zé Keti</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Eu sou o samba
+A voz do morro sou eu mesmo sim senhor
+Quero mostrar ao mundo que tenho valor
+
+Eu sou o samba
+Sou natural daqui do Rio de Janeiro
+Sou eu quem levo a alegria
+Para milhões de corações brasileiros
+
+Salve o samba, queremos samba
+Quem está pedindo é a voz do povo do país
+Salve o samba, queremos samba
+Essa melodia de um Brasil feliz</div></div>
+    </div>
+
+    <div class="item" data-tuning="Ré Menor">
+        <button class="btn">Ex Amor <span class="artist">Martinho da Vila</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Ex-amor
+Gostaria que tu soubesses
+O quanto que eu sofri
+Ao ter que me afastar de ti
+
+Não chorei
+Eu até sorri
+Mas no fundo só eu sei
+As tristezas que senti
+
+Ex-amor
+Sei que tu deves estar
+Feliz com outro amor
+Viver
+Sonhar com outro alguém
+
+Foi por força desse nosso desencontro
+Que eu fiquei assim
+Tão descrente do amor
+E do amor
+O que é que fui fazer
+Agora vivo só
+Saudoso e cheio de dor</div></div>
+    </div>
+
+    <div class="item" data-tuning="Ré Maior">
+        <button class="btn">Falsa Consideração <span class="artist">Jorge Aragão</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Agora eu sei
+Que o amor que você prometeu
+Não foi igual ao que você me deu
+Era mentira o que você jurou
+
+Mas não faz mal
+Eu aprendi que não se deve crer
+Em tudo aquilo que alguém nos diz
+Num momento de prazer ou de amor
+
+Mas tudo bem
+Eu sei que um dia vai e outro vem
+Você ainda há de encontrar alguém
+Pra lhe fazer o que você me fez
+
+E aí
+Na hora do sufoco sei que você vai me procurar
+Com a mesma conversa que um dia me fez apaixonar
+Por alguém de uma falsa consideração
+
+E aí
+Você vai perceber que eu estou numa boa
+Que durante algum tempo fiquei sem ninguém
+Mas há males na vida que vêm para o bem
+
+Agora eu sei
+Que o amor que você prometeu
+Não foi igual ao que você me deu
+Era mentira o que você jurou
+
+Mas não faz mal
+Eu aprendi que não se deve crer
+Em tudo aquilo que alguém nos diz
+Num momento de prazer ou de amor
+
+Mas tudo bem
+Eu sei que um dia vai e outro vem
+Você ainda há de encontrar alguém
+Pra lhe fazer o que você me fez</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Feitiço da Vila <span class="artist">Noel Rosa</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Quem nasce lá na Vila
+Nem sequer vacila
+Ao abraçar o samba
+Que faz dançar os galhos do arvoredo
+E faz a Lua nascer mais cedo
+
+Lá em Vila Isabel
+Quem é bacharel
+Não tem medo de bamba
+São Paulo dá café
+Minas dá leite
+E a Vila Isabel dá samba
+
+A Vila tem um feitiço sem farofa
+Sem vela e sem vintém
+Que nos faz bem
+Tendo nome de princesa
+Transformou o samba
+Num feitiço decente
+Que prende a gente
+
+O Sol da Vila é triste
+Samba não assiste
+Porque a gente implora
+Sol, pelo amor de Deus
+Não venha agora
+Que as morenas vão logo embora
+
+Eu sei por onde passo
+Sei tudo que faço
+Paixão não me aniquila
+Mas, tenho que dizer
+Modéstia à parte, meus senhores
+Eu sou da Vila!
+
+Quem nasce pra sambar
+Chora pra mamar
+Em ritmo de samba
+Lá não tem cadeado nos portões
+Por que na Vila não tem ladrão</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Filho de Jorge <span class="artist">Juninho Thybau</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item" data-tuning="Dó Maior">
+        <button class="btn">Fogo de Saudade <span class="artist">Fundo de Quintal</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Dentro do meu ser arde uma paixão
+Fogo de saudade invade o coração
+Foi sem perceber que o amor chegou
+Sem nem mais porquê a luz se apagou
+
+E sendo assim a minha voz não vou calar
+Desejo sim que um novo sol venha brilhar
+
+Quem ama pra valer do amor se fortalece
+Não fiz por merecer a dor que me entristece
+
+E sendo assim a minha voz não vou calar
+Desejo sim que um novo sol venha brilhar
+
+Só quero o meu lugar nas asas dessa ilusão
+Que tanto me fez chorar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Folhas Secas <span class="artist">Nelson Cavaquinho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Quando eu piso em folhas secas
+Caídas de uma mangueira
+Penso na minha escola
+E nos poetas da minha Estação Primeira
+
+Não sei quantas vezes
+Subi o morro cantando
+Sempre o sol me queimando
+E assim vou me acabando
+
+Quando o tempo avisar
+Que eu não posso mais cantar
+Sei que vou sentir saudade
+Ao lado do meu violão
+Da minha mocidade</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Foram Me Chamar <span class="artist">Dona Ivone Lara</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Foram me chamar
+Eu estou aqui, o que é que há?
+Foram me chamar
+Eu estou aqui, o que é que há?
+
+Eu vim de lá, eu vim de lá pequenininho
+Mas eu vim de lá pequenininho
+Alguém me avisou pra pisar nesse chão devagarinho
+Alguém me avisou pra pisar nesse chão devagarinho
+
+Sempre fui obediente
+Mas não pude resistir
+Foi numa roda de samba
+Que juntei minhas mágoas pra dividir
+
+Quando eu voltar à Bahia
+Terei muito o que contar
+Ó, paí, ó, mãe
+Há chorar não quero mais voltar
+
+Foram me chamar
+Eu estou aqui, o que é que há?
+Foram me chamar
+Eu estou aqui, o que é que há?</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Inigualável Paixão <span class="artist">Reinaldo</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">És inigualável
+Na arte de amar
+Sou tão feliz
+Que até posso afirmar
+Jamais vivi um amor assim
+Fez renascer de dentro de mim
+Um sentimento que eu sepultei
+Por desamor sofri
+Confesso que chorei...
+
+Foi bom surgir você
+Pra reabrir o meu coração
+E me induzir de novo à paixão
+E outra vez me fazer sorrir
+A solidão se afastou
+Enfim!
+Tudo que eu quero
+É ir mais além
+Pois encontrei o amor
+Com a vida estou de bem...
+
+Que a lua!
+Que a lua venha nos iluminar
+E o sol para nos aquecer
+Pois quando a brisa
+Da manhã chegar
+Irá fortalecer
+Ainda mais
+A união
+Vou sonhar então...
+
+És inigualável
+Na arte de amar
+Sou tão feliz
+Que até posso afirmar
+Jamais vivi um amor assim
+Fez renascer de dentro de mim
+Um sentimento que eu sepultei
+Por desamor sofri
+Confesso que chorei...
+
+Foi bom surgir você
+Pra reabrir o meu coração
+E me induzir de novo à paixão
+E outra vez me fazer sorrir
+A solidão se afastou
+Enfim!
+Tudo que eu quero
+É ir mais além
+Pois encontrei o amor
+Com a vida estou de bem...
+
+Que a lua!
+Que a lua venha nos iluminar
+E o sol para nos aquecer
+Pois quando a brisa
+Da manhã chegar
+Irá fortalecer
+Ainda mais
+A união
+Vou sonhar então...</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Juízo Final <span class="artist">Nelson Cavaquinho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">O Sol há de brilhar mais uma vez
+A luz há de chegar aos corações
+Do mal será queimada a semente
+O amor será eterno novamente
+
+É o juízo final
+A história do bem e do mal
+Quero ter olhos pra ver
+A maldade desaparecer
+
+O Sol há de brilhar mais uma vez
+A luz há de chegar aos corações
+Do mal será queimada a semente
+O amor será eterno novamente
+
+O amor será eterno novamente
+O amor será eterno novamente</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Lendas da Mata <span class="artist">João Martins</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">O saci rodopiou
+Ventania na palhoça
+Sinhazinha bambeou
+Deu mironga lá na roça
+
+O saci rodopiou
+Ventania na palhoça
+Sinhazinha bambeou
+Deu mironga lá na roça
+
+São coisas que o olho não vê
+E que a alma pode enxergar
+Zombeteiro, ê caxambu!
+Toque no pé do Juá
+É mistério a força de crer
+Fundamentos que vem de lá
+Bicho do mato some do breu
+Se escondeu no Juremá
+
+Caboclo sabe as lendas da mata
+Caboclo traz a bala de prata
+Pro uivar da meia noite
+Lua cheia, madrugada
+De feitiço e pajelança
+Faz-se a lenda encantada
+
+Caboclo sabe as lendas da mata
+Caboclo traz a bala de prata
+Pro uivar da meia noite
+Lua cheia, madrugada
+De feitiço e pajelança
+Faz-se a lenda encantada
+
+O saci rodopiou
+Ventania na palhoça
+Sinhazinha bambeou
+Deu mironga lá na roça
+
+Quem manda na mata é Ôxosse
+Ôxosse é caçador
+Quem manda na mata é Ôxosse
+Ôxosse é caçador</div></div>
+    </div>
+
+    <div class="item" data-tuning="Lá-">
+        <button class="btn">Mais Que Nada <span class="artist">Sergio Mendes / Jorge Ben Jor</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada nas fontes consultadas. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item" data-tuning="Sol+">
+        <button class="btn">Malandro <span class="artist">Jorge Aragão</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Malandro
+Eu ando querendo falar com você
+Você tá sabendo que o Zeca morreu?
+Por causa de brigas que teve com a lei
+
+Malandro
+Eu sei que você nem se liga pro fato
+De ser capoeira, moleque mulato
+Perdido no mundo, morrendo de amor
+
+Malandro
+Sou eu que te falo em nome daquela
+Que na passarela é porta-estandarte
+E lá na favela tem nome de flor
+
+Malandro
+Só peço favor de que tenhas cuidado
+As coisas não andam tão bem pro teu lado
+Assim você mata a Rosinha de dor
+
+Lá, laiá, laiá, laiá, laia laia</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Maneiras <span class="artist">Zeca Pagodinho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Se eu quiser fumar, eu fumo
+Se eu quiser beber, eu bebo
+Eu pago tudo o que eu consumo
+Com o suor do meu emprego
+
+Confusão eu não arrumo
+Mas também não peço arrego
+Eu um dia me aprumo
+Eu tenho fé no meu apego
+
+Eu só posso ter chamego
+Com quem me faz cafuné
+Como o vampiro e o morcego
+É o homem e a mulher
+
+O meu linguajar �� nato
+Eu não estou falando grego
+Eu tenho amores e amigos de fato
+Nos lugares onde eu chego
+
+Eu estou descontraído
+Não que eu tivesse bebido
+Nem que eu tivesse fumado
+
+Pra falar de vida alheia
+Mas digo sinceramente
+Na vida, a coisa mais feia
+É gente que vive chorando de barriga cheia
+
+Tem gente que vive chorando de barriga cheia
+Tem gente que vive chorando de barriga cheia</div></div>
+    </div>
+
+    <div class="item" data-tuning="Lá Menor">
+        <button class="btn">Mel na Boca <span class="artist">Almir Guineto</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Oh, quanta mentira suportei
+Neste teu cinismo de doçura
+Pode parar com essa ideia de representação
+Os bastidores se fecharam pra desilusão
+
+É mentira
+É mentira
+
+Cadê toda promessa de me dar felicidade?
+Bota mel em minha boca
+Me ama, depois deixa a saudade
+Será... será que o amor é isso?
+Se é feitiço vou jogar flores no mar
+
+Um raio de luz
+Do Sol voltará a brilhar
+Que se apagou e deixou noite em meu olhar
+
+Oh, quanta mentira suportei
+Neste teu cinismo de doçura
+Pode parar com essa ideia de representação
+Os bastidores se fecharam pra desilusão
+
+É mentira
+É mentira
+
+Cadê toda promessa de me dar felicidade?
+Bota mel em minha boca
+Me ama, depois deixa a saudade
+Será... será que o amor é isso?
+Se é feitiço vou jogar flores no mar
+
+Um raio de luz
+Do Sol voltará a brilhar
+Que se apagou e deixou noite em meu olhar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Menina Mulher da Pele Preta <span class="artist">Moraes Moreira</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Menina mulher da pele preta
+Qual é o caminho do teu coração?
+Menina mulher da pele preta
+Qual é o caminho do teu coração?
+
+Eu queria entrar no teu mundo de sonhos
+Te fazer feliz, te fazer feliz
+Eu queria ser teu raio de lua
+Clareando a rua, o teu soletrar
+O teu soletrar, o teu soletrar
+
+Menina mulher da pele preta
+Qual é o caminho do teu coração?
+Menina mulher da pele preta
+Qual é o caminho do teu coração?
+
+Será que tem espaço pra mais uma paixão?
+Será que a gente sente o mesmo sim ou não?
+Será que cabe um sonho nessa imensidão?
+Nesse teu mundo, nesse teu mundo
+
+Menina mulher da pele preta
+Qual é o caminho do teu coração?
+Menina mulher da pele preta
+Qual é o caminho do teu coração?</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Meu Samba <span class="artist">Beth Carvalho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Canto a felicidade
+Me sinto bem, não deixarei de cantar
+O samba é meu presente, é o meu brasão
+Não sai da minha mente nem do coração
+
+Assim meu samba diz o quanto sou feliz
+Poder sonhar nos braços do amor
+Por onde eu passar meu canto há de ecoar
+Qual a brisa mansa embalando a flor
+
+Meu samba é quem faz o show dos carnavais
+E leva a paz a onde for
+Resiste aos vendavais, só ele é capaz
+De acabar com esse desamor
+
+Canto a felicidade
+Me sinto bem, não deixarei de cantar
+O samba é meu presente, é o meu brasão
+Não sai da minha mente nem do coração
+
+Assim meu samba diz o quanto sou feliz
+Poder sonhar nos braços do amor
+Por onde eu passar meu canto há de ecoar
+Qual a brisa mansa embalando a flor
+
+Meu samba é quem faz o show dos carnavais
+E leva a paz aonde for
+Resiste aos vendavais, só ele é capaz
+De acabar com esse desamor</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Mordomia <span class="artist">Almir Guineto</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Ô Maria, ô Maria
+Vamos parar já com essa mordomia
+Ô Maria, ô Maria
+Vamos parar já com essa mordomia
+É de noite, é de dia
+Chega a sogra, chega a tia
+Quase sempre é panela no fogo
+E barriga vazia
+
+De noite eu chego cansado e suado
+Quero ir no banheiro, está sempre ocupado
+A pia está cheia e vazia a panela
+A turma lá em casa só fica naquela
+
+Sou eu que aguento o supermercado
+Sou eu que aguento o vizinho do lado
+E na madrugada ainda sou maltratado
+
+Ô Maria, ô Maria
+Vamos parar já com essa mordomia
+Ô Maria, ô Maria
+Vamos parar já com essa mordomia
+É de noite, é de dia
+Chega a sogra, chega a tia
+Quase sempre é panela no fogo
+E barriga vazia
+
+Isso aqui tá parecendo
+A casa de mãe Joana
+Todo mundo aqui dá ordem
+Aqui todo mundo manda
+
+Você não tem pulso ô nega
+Nem pra governar o nosso barracão
+Vou me embora, pra mim chega
+Vou largar na sua mão
+
+Ô Maria, ô Maria
+Vamos parar já com essa mordomia</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Mulheres <span class="artist">Jorge Aragão</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Já tive mulheres
+De todas as cores
+De várias idades
+De muitos amores
+
+Com umas até certo tempo fiquei
+Com outras apenas um pouco mais
+Com umas até me apaixonei
+Mas nenhuma delas
+Me fez tão bem
+Quanto você
+
+Já tive mulheres
+Do tipo atrevida
+Do tipo acanhada
+Do tipo vivida
+Casada carente
+Solteira feliz
+Já tive donzela
+E até meretriz
+
+Mulheres cabeça e desequilibradas
+Mulheres confusas, de guerra e de paz
+Mas nenhuma delas
+Me fez tão feliz
+Quanto você me faz
+
+Procurei em todas as mulheres
+A felicidade
+Mas eu não encontrei
+E fiquei na saudade
+
+Foi começando bem
+Mas tudo teve um fim
+Você é o sol da minha vida
+A minha vontade
+Você não é mentira
+Você é verdade
+É tudo o que um dia
+Eu sonhei pra mim</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Não Deixe o Samba Morrer <span class="artist">Alcione</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Mamãe eu quero lhe pedir um favor
+Que não deixe o samba morrer
+Não deixe o samba acabar
+O morro foi feito de samba
+De samba pra gente sambar
+
+Quando eu não puder pisar mais na avenida
+Quando as minhas pernas não puderem aguentar
+Levar meu corpo, junto com meu samba
+O meu anel de bamba entregar a quem mereça usar
+
+Eu vou ficar no meio do povo espiando
+Minha escola perdendo ou ganhando
+Mais um carnaval
+
+Antes de me despedir
+Deixo o samba estar
+O ano inteiro eu vou pedir
+Não deixem o samba morrer
+Não deixem o samba acabar
+O morro foi feito de samba
+De samba pra gente sambar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Não Me Diga Adeus <span class="artist">Alcione</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Não, não me diga adeus
+Pense nos sofrimentos meus
+Não, não me diga adeus
+Pense nos sofrimentos meus
+
+Se alguém lhe dá conselhos
+Pra você me abandonar
+Não devemos nos separar
+Não vá me deixar, por favor
+
+Que a saudade é cruel
+Quando existe amor
+Quando existe amor
+
+Não me diga adeus
+Pense nos sofrimentos meus
+Não, não me diga adeus
+Pense nos sofrimentos meus</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Não Posso Esquecer o Seu Olhar <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Não posso esquecer o seu olhar
+Não posso esquecer de te amar
+Pois foi você que fez nascer
+No peito meu
+Um grande amor
+
+Sei que você também
+Não esqueceu
+Daqueles dias lindos de paixão
+Foi tanto amor que ainda acredito
+Que foi só ilusão
+
+Mas sei também
+Que posso resgatar
+Este amor perdido
+Volta pra mim
+
+Pois sei que ainda somos
+Muito apaixonados
+Não faz sentido viver assim
+
+Não posso esquecer
+O seu olhar...</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Não Posso Ficar Nem Mais Um Minuto (Trem das Onze) <span class="artist">Adoniran Barbosa</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Não posso ficar
+Nem mais um minuto com você
+Sinto muito amor
+Mas não pode ser
+
+Moro em Jaçanã
+Se eu perder esse trem
+Que sai agora às onze horas
+Só amanhã de manhã
+
+E além disso mulher
+Tem outra coisa
+Minha mãe não dorme
+Enquanto eu não chegar
+Sou filho único
+
+Não posso ficar
+Nem mais um minuto com você
+Sinto muito amor
+Mas não pode ser
+
+Moro em Jaçanã
+Se eu perder esse trem
+Que sai agora às onze horas
+Só amanhã de manhã
+
+E além disso mulher
+Tem outra coisa
+Minha mãe não dorme
+Enquanto eu não chegar
+Sou filho único</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">O Bêbado e o Equilibrista <span class="artist">Elis Regina / João Bosco</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Caía a tarde feito um viaduto
+E um bêbado trajando luto
+Me lembrou Carlitos
+A lua, tal qual a dona de um bordel
+Pedia a cada estrela fria
+Um brilho de aluguel
+
+E nuvens, lá no mataborrão do céu
+Chupavam manchas torturadas
+Que sufoco!
+Louco!
+O bêbado com chapéu-coco
+Fazia irreverências mil
+Pra noite do Brasil
+Meu Brasil
+
+Que sonha com a volta do irmão do Henfil
+Com tanta gente que partiu
+Num rabo de foguete
+Chora
+A nossa pátria mãe gentil
+Choram Marias e Clarices
+No solo do Brasil
+
+Mas sei, que uma dor assim pungente
+Não há de ser inutilmente
+A esperança
+Dança na corda bamba de sombrinha
+E em cada passo
+Dessa linha
+Pode se machucar
+Azar!
+
+A esperança equilibrista
+Sabe que o show de todo artista
+Tem que continuar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">O Morro Não Tem Vez <span class="artist">Tom Jobim / Vinícius de Moraes</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada nas fontes consultadas. Consulte letras.com/tom-jobim diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">O Nosso Amor <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item" data-tuning="Dó Maior">
+        <button class="btn">O Show Tem Que Continuar <span class="artist">Fundo de Quintal</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Meus tempos de criança
+Eu quis encontrar
+E aquele amor de infância
+Eu quis reencontrar
+Seguimos a mesma estrada
+A estrada do amor
+Mas sempre ficou guardado
+No fundo do peito a dor
+
+Marcas do tempo em mim
+É o preço de amar
+Vivendo pra te querer
+Tentando te esquecer
+Sigo a vida
+Tentando entender
+
+E não vai ser
+Nossa separação
+Tantas idas e voltas
+Que um dia um samba vai falar
+O show tem que continuar
+
+Meu amor
+O show tem que continuar
+Meu bem
+O show tem que continuar
+
+Se acaso você for
+Se acaso isso for acontecer
+O show tem que continuar
+Te esperando na avenida
+Eu vou ficar
+O show tem que continuar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">O Mundo é um Moinho <span class="artist">Cartola</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Ainda é cedo amor
+Mal começaste a conhecer a vida
+Já queres saber o que é a despedida
+Sentir a dor de uma ferida
+
+Presta atenção querida
+O mundo é um moinho
+Vai triturar teus sonhos, tão mesquinho
+Vai reduzir teus planos a pó
+
+Presta atenção querida
+O mundo é um moinho
+Vai triturar teus sonhos, tão mesquinho
+Vai reduzir teus planos a pó</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Ô Avió Raió <span class="artist">Folclore / Domínio Público</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Ô avió
+Raió
+Cadê a luz que estava aqui?
+Ô vagalume
+Vem cá
+Eu também quero brincar
+
+Ô avió
+Raió
+Cadê a luz que estava aqui?
+Ô vagalume
+Vem cá
+Eu também quero brincar
+
+Aqui não pode ficar
+Se você não acender
+Eu preciso da luz
+Para poder lhe ver
+
+Ô avió
+Raió
+Cadê a luz que estava aqui?
+Ô vagalume
+Vem cá
+Eu também quero brincar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Olho por Olho <span class="artist">Beth Carvalho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">A justiça dos homens
+Condena a bigamia
+Nenhuma mulher pode ter dois Josés
+Nenhum homem ter duas Marias
+
+Dente por dente
+Olho por olho
+Se tentar me enganar
+Bota a barba de molho
+
+Você que se diz malandro
+Malandro você não é
+Porque não existe homem malandro pra mulher
+
+Você já fez a primeira
+Mas a segunda não faz
+A partir de hoje os direitos são iguais
+
+Dente por dente
+Olho por olho
+Se tentar me enganar
+Bota a barba de molho
+
+Diz o velho ditado
+Com muita sabedoria
+Gato escaldado sente medo de água fria
+
+Meu amor vê se manera
+Não é hora de brigar
+Dançou fora do compasso
+Eu pra lá, você pra cá
+
+Dente por dente
+Olho por olho
+Se tentar me enganar
+Bota a barba de molho</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">País Tropical <span class="artist">Jorge Ben Jor</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Moro num país tropical
+Abençoado por Deus
+E bonito por natureza (mas que beleza!)
+Em fevereiro (em fevereiro)
+Tem carnaval
+Tem carnaval
+
+Eu tenho um fusca e um violão
+Sou Flamengo e tenho uma nêga
+Chamada Tereza
+
+Sambaby, sambaby
+Posso não ser um bandleader
+Mas lá em casa
+Todos meus amigos, meus camaradinhas
+Me respeitam
+
+Moro num país tropical
+Abençoado por Deus
+E bonito por natureza (mas que beleza!)
+Em fevereiro (em fevereiro)
+Tem carnaval
+
+Eu tenho um fusca e um violão
+Sou Flamengo e tenho uma nêga
+Chamada Tereza
+
+Sambaby, sambaby
+Eu posso não ser um bandleader
+Mas lá em casa
+Todos meus amigos, meus camaradinhas
+Me respeitam
+
+Pois é
+(E depois dizem que bandleader não tem moral...)</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Papo de Samba <span class="artist">Fundo de Quintal</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">A madrugada tá chegando e a gente aqui batendo papo
+Papo de bola, papo de samba, papo de grana, bafo de cana
+Nada do bonde passar
+
+E o sereno tá caindo e deu saudade do meu quarto
+Da minha cama, do meu pijama, da minha dama
+Deu saudade do meu lar
+
+São quatro horas da manhã e não pintou uma carona
+Passou um táxi agora mas é curta a minha grana
+Até os homens da patamo já me deram dura
+
+Ninguém segura, tanta loucura
+Mas todo final de semana
+É sempre uma aventura
+
+Pra completar quando eu chego em casa é bafafá
+A comida eu que tenho que esquentar
+Meu benzinho me manda pro sofá
+Diz que vai me deixar
+E que ainda me acerta de jeito se eu não me acertar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Pé na Areia <span class="artist">Diogo Nogueira</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Pé na areia
+A caipirinha, água de coco, cervejinha
+O verão tá aí
+Vale lembrar
+Me bate uma saudade
+No balanço do mar
+
+Vem pro meu lado
+Que a felicidade encontra
+A gente no caminho
+A tristeza vai embora
+
+E quando o dia raiar
+Eu quero estar com meu amor
+No pensamento só o vento
+Beija o seu calor
+
+Vem pra cá
+O melhor lugar do mundo
+É aqui com você
+No balanço do mar
+
+Vem pra cá
+O melhor lugar do mundo
+É aqui com você
+Não importa onde for
+
+Levo a paz no coração
+O sorriso em poder te ver
+No balanço do mar</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Pra Tudo Se Acabar na Quarta-Feira <span class="artist">Martinho da Vila</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">A grande paixão
+Que foi inspiração
+Do poeta é o enredo
+Que emociona a velha-guarda
+
+Lá na comissão de frente
+Como a diretoria
+Glória a quem trabalha o ano inteiro
+Em mutirão
+
+São escultores, são pintores, bordadeiras
+São carpinteiros, vidraceiros, costureiras
+Figurinista, desenhista e artesão
+Gente empenhada em construir a ilusão
+
+E que tem sonhos
+Como a velha baiana
+Que foi passista
+Brincou em ala
+Dizem que foi o grande amor de um mestre-sala
+
+O sambista é um artista
+E o nosso Tom é o diretor de harmonia
+Os foliões são embalados
+Pelo pessoal da bateria
+
+Sonho de rei, de pirata e jardineira
+Pra tudo se acabar na quarta-feira
+
+Mas a quaresma lá no morro é colorida
+Com fantasias já usadas na avenida
+Que são cortinas, que são bandeiras
+Razão pra vida tão real da quarta-feira
+É por isso que eu canto</div></div>
+    </div>
+
+    <div class="item" data-tuning="Lá-">
+        <button class="btn">Preciso Me Encontrar <span class="artist">Candeia</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Samba Blim Blim Blau <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Se Vem Dia Meu Coração <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Sem Compromisso <span class="artist">Chico Buarque</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Você só dança com ele
+E diz que é sem compromisso
+É bom acabar com isso
+Não sou nenhum Pai João
+Quem trouxe você fui eu
+Não faça papel de louca
+Pra não haver bate-boca
+Dentro do salão
+
+Quando toca um samba
+Eu lhe tiro pra dançar
+Você me diz: "Não, eu agora tenho par"
+E sai dançando com ele, alegre e feliz
+Quando para o samba
+Agradece e pede bis
+
+Você só dança com ele
+E diz que é sem compromisso
+É bom acabar com isso
+Não sou nenhum Pai João
+Quem trouxe você fui eu
+Não faça papel de louca
+Pra não haver bate-boca
+Dentro do salão</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Sonho Meu <span class="artist">Dona Ivone Lara / Zeca Pagodinho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Sonho meu, sonho meu
+Vai buscar quem mora longe
+Sonho meu
+
+Vai buscar lá onde mora a saudade
+Sonho meu
+Com a sua liberdade
+Sonho meu
+No meu céu a estrela guia
+Se perdeu
+A madrugada fria
+Só me traz
+Melancolia
+
+Sonho meu, sonho meu
+Vai buscar quem mora longe
+Sonho meu
+
+Sentimento ilhado
+Morto, amordaçado
+Volta a viver
+No ar que a vida traz
+Essa mulher
+Faz um tempo parar
+De se perder
+E se entregar
+A solidão
+
+Sonho meu, sonho meu
+Vai buscar quem mora longe
+Sonho meu</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Sorriso Negro <span class="artist">Dona Ivone Lara</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Sorriso negro
+Um abraço negro
+Traz felicidade
+
+Negro sem emprego
+Fica sem sossego
+Negro é só tristeza
+Alegria nunca existe
+Negro é a raiz da liberdade
+
+Negro é a cor da noite
+Filho de um sol maior
+Negro é a inspiração
+Negro é carnaval
+
+Negro é a luz do dia
+Negro é melodia
+É a voz da razão
+É felicidade</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Tristeza Por Favor <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Vai Vadiar (Vai Bambacão) <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Velha Infância <span class="artist">Tribalistas</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Você é assim
+Um sonho pra mim
+E quando eu não te vejo
+Eu penso em você
+Desde o amanhecer
+Até quando eu me deito
+
+Eu gosto de você
+E gosto de ficar com você
+Meu riso é tão feliz contigo
+O meu melhor amigo
+É o meu amor
+
+E a gente canta
+E a gente dança
+E a gente não se cansa
+De ser criança
+A gente é feliz, feliz
+
+Você é assim
+Um sonho pra mim
+Você é assim
+Um sonho pra mim
+
+Ah ah ah ah
+Ah ah ah ah
+Ah ah ah ah
+Ah ah ah ah
+
+Quero te envolver
+Quero te envolver
+Quero te envolver
+Quero te envolver</div></div>
+    </div>
+
+    <div class="item" data-tuning="Dó Maior">
+        <button class="btn">Voltar a Paz <span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">⚠️ Letra não encontrada. Consulte letras.com diretamente.</div></div>
+    </div>
+
+    <div class="item">
+        <button class="btn">Vou Festejar <span class="artist">Jorge Aragão / Beth Carvalho</span><span class="icon">+</span></button>
+        <div class="content"><div class="lyrics">Chora
+Não vou ligar
+Chegou a hora
+Vais me pagar
+Pode chorar, pode chorar (mas chora!)
+É, o teu castigo
+Brigou comigo
+Sem ter porquê
+
+Eu vou festejar, vou festejar
+O teu sofrer, o teu penar
+Você pagou com traição
+A quem sempre lhe deu a mão
+
+La laiá, la laiá, la laiá
+La laiá, la laiá, la laiá
+
+Eu vou festejar, vou festejar
+O teu sofrer, o teu penar
+Você pagou com traição
+A quem sempre lhe deu a mão
+
+La laiá, la laiá, la laiá
+La laiá, la laiá, la laiá
+
+Chora
+Não vou ligar
+Chegou a hora
+Vais me pagar
+Pode chorar, pode chorar (mas chora!)
+É, o teu castigo
+Brigou comigo
+Sem ter porquê
+
+Eu vou festejar, vou festejar
+O teu sofrer, o teu penar
+Você pagou com traição
+A quem sempre lhe deu a mão
+
+Você pagou com traição
+A quem sempre lhe deu a mão</div></div>
+    </div>
+
+</div>
+
+<footer>
+  2026 Diego Samba • Repertório Online
+</footer>
+
+<script>
+    const container = document.getElementById('songList');
+
+    function buildItem(titleText, artistText, tuningText, lyricsText, storageKey) {
+        const item = document.createElement('div');
+        item.className = 'item';
+
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+
+        const titleNode = document.createTextNode('');
+        const artistEl = document.createElement('span');
+        artistEl.className = 'artist';
+        artistEl.textContent = artistText;
+        const tuningEl = document.createElement('span');
+        tuningEl.className = 'tuning-badge';
+        tuningEl.textContent = tuningText;
+        tuningEl.style.display = tuningText ? '' : 'none';
+        const iconEl = document.createElement('span');
+        iconEl.className = 'icon';
+        iconEl.textContent = '+';
+
+        btn.appendChild(titleNode);
+        btn.appendChild(tuningEl);
+        btn.appendChild(artistEl);
+        btn.appendChild(iconEl);
+
+        const content = document.createElement('div');
+        content.className = 'content';
+
+        const lyricsDiv = document.createElement('div');
+        lyricsDiv.className = 'lyrics';
+        lyricsDiv.textContent = lyricsText;
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'edit-btn';
+        editBtn.textContent = '✏️ Edit';
+
+        const editPanel = document.createElement('div');
+        editPanel.className = 'edit-panel';
+
+        const titleLabel = document.createElement('label');
+        titleLabel.textContent = 'Song Title';
+        const titleInput = document.createElement('input');
+        titleInput.className = 'edit-title';
+        titleInput.type = 'text';
+        titleInput.value = titleText;
+
+        const artistLabel = document.createElement('label');
+        artistLabel.textContent = 'Artist';
+        const artistInput = document.createElement('input');
+        artistInput.className = 'edit-artist';
+        artistInput.type = 'text';
+        artistInput.value = artistText;
+
+        const tuningLabel = document.createElement('label');
+        tuningLabel.textContent = 'Tuning (Tom)';
+        const tuningInput = document.createElement('input');
+        tuningInput.className = 'edit-tuning';
+        tuningInput.type = 'text';
+        tuningInput.value = tuningText;
+        tuningInput.placeholder = 'e.g. Sol Maior';
+
+        const lyricsLabel = document.createElement('label');
+        lyricsLabel.textContent = 'Lyrics';
+        const lyricsTextarea = document.createElement('textarea');
+        lyricsTextarea.className = 'edit-lyrics';
+        lyricsTextarea.value = lyricsText;
+
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'save-btn';
+        saveBtn.textContent = 'Save';
+
+        editPanel.appendChild(titleLabel);
+        editPanel.appendChild(titleInput);
+        editPanel.appendChild(artistLabel);
+        editPanel.appendChild(artistInput);
+        editPanel.appendChild(tuningLabel);
+        editPanel.appendChild(tuningInput);
+        editPanel.appendChild(lyricsLabel);
+        editPanel.appendChild(lyricsTextarea);
+                const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.textContent = '🗑️ Delete Song';
+
+        deleteBtn.addEventListener('click', () => {
+            if (confirm(`Delete "${titleInput.value.trim()}"? This cannot be undone.`)) {
+                localStorage.removeItem(storageKey);
+                item.remove();
+                sortAndNumber();
+            }
+        });
+
+        editPanel.appendChild(saveBtn);
+        editPanel.appendChild(deleteBtn);
+
+        content.appendChild(editBtn);
+        content.appendChild(lyricsDiv);
+        content.appendChild(editPanel);
+        item.appendChild(btn);
+        item.appendChild(content);
+
+        // Accordion
+        btn.addEventListener('click', () => {
+            const isOpen = btn.classList.contains('active');
+            document.querySelectorAll('.btn').forEach(b => {
+                b.classList.remove('active');
+                b.nextElementSibling.style.maxHeight = null;
+            });
+            if (!isOpen) { btn.classList.add('active'); content.style.maxHeight = content.scrollHeight + "px"; }
+        });
+
+        // Edit toggle
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = editPanel.classList.contains('open');
+            editPanel.classList.toggle('open');
+            editBtn.textContent = isOpen ? '✏️ Edit' : '✕ Close';
+            content.style.maxHeight = content.scrollHeight + "px";
+        });
+
+        // Save
+        saveBtn.addEventListener('click', () => {
+            const newTitle = titleInput.value.trim();
+            const newArtist = artistInput.value.trim();
+            const newTuning = tuningInput.value.trim();
+            const newLyrics = lyricsTextarea.value;
+
+            lyricsDiv.textContent = newLyrics;
+            artistEl.textContent = newArtist;
+            tuningEl.textContent = newTuning;
+            tuningEl.style.display = newTuning ? '' : 'none';
+
+            localStorage.setItem(storageKey, JSON.stringify({
+                title: newTitle,
+                artist: newArtist,
+                tuning: newTuning,
+                lyrics: newLyrics
+            }));
+
+            editPanel.classList.remove('open');
+            editBtn.textContent = '✏️ Edit';
+            content.style.maxHeight = content.scrollHeight + "px";
+
+            // Re-sort and renumber
+            sortAndNumber();
+        });
+
+        item._titleNode = titleNode;
+        item._storageKey = storageKey;
+        item._sortTitle = titleText.toLowerCase();
+
+        return item;
+    }
+
+    function sortAndNumber() {
+        const allItems = Array.from(container.getElementsByClassName('item'));
+        allItems.sort((a, b) => {
+            const tA = a._sortTitle || a.querySelector('.btn').childNodes[0].textContent.trim().toLowerCase();
+            const tB = b._sortTitle || b.querySelector('.btn').childNodes[0].textContent.trim().toLowerCase();
+            return tA.localeCompare(tB, 'pt', { sensitivity: 'base' });
+        });
+        allItems.forEach((item, index) => {
+            const rawTitle = item._sortTitle
+                ? item._sortTitle.charAt(0).toUpperCase() + item._sortTitle.slice(1)
+                : item.querySelector('.btn').childNodes[0].textContent.trim().replace(/^\d+\.\s*/, '');
+            item._titleNode.textContent = (index + 1) + '. ' + rawTitle + ' ';
+            item._sortTitle = rawTitle.toLowerCase();
+            container.appendChild(item);
+        });
+    }
+
+    // Build items from existing HTML
+    const rawItems = Array.from(container.getElementsByClassName('item'));
+    rawItems.forEach(item => {
+        const btn = item.querySelector('.btn');
+        const titleNode = btn.childNodes[0];
+        const artistEl = item.querySelector('.artist');
+        const lyricsDiv = item.querySelector('.lyrics');
+
+        const originalTitle = titleNode.textContent.trim();
+        const originalArtist = artistEl ? artistEl.textContent.trim() : '';
+        const originalTuning = item.dataset.tuning || '';
+        const originalLyrics = lyricsDiv.textContent.trim();
+
+        const storageKey = 'song_' + originalTitle.toLowerCase().replace(/\s+/g, '_');
+        const saved = JSON.parse(localStorage.getItem(storageKey) || 'null');
+
+        const currentTitle = saved ? saved.title : originalTitle;
+        const currentArtist = saved ? saved.artist : originalArtist;
+        const currentTuning = saved ? (saved.tuning || originalTuning) : originalTuning;
+        const currentLyrics = saved ? saved.lyrics : originalLyrics;
+
+        const newItem = buildItem(currentTitle, currentArtist, currentTuning, currentLyrics, storageKey);
+        item.replaceWith(newItem);
+    });
+
+    sortAndNumber();
+
+    // Add song modal
+    const modalOverlay = document.getElementById('modalOverlay');
+    document.getElementById('addSongBtn').addEventListener('click', () => {
+        document.getElementById('newTitle').value = '';
+        document.getElementById('newArtist').value = '';
+        document.getElementById('newTuning').value = '';
+        document.getElementById('newLyrics').value = '';
+        modalOverlay.classList.add('open');
+        document.getElementById('newTitle').focus();
+    });
+
+    document.getElementById('modalCancel').addEventListener('click', () => {
+        modalOverlay.classList.remove('open');
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) modalOverlay.classList.remove('open');
+    });
+
+    document.getElementById('modalSave').addEventListener('click', () => {
+        const title = document.getElementById('newTitle').value.trim();
+        const artist = document.getElementById('newArtist').value.trim();
+        const tuning = document.getElementById('newTuning').value.trim();
+        const lyrics = document.getElementById('newLyrics').value.trim();
+
+        if (!title) { document.getElementById('newTitle').focus(); return; }
+
+        const storageKey = 'song_' + title.toLowerCase().replace(/\s+/g, '_');
+        localStorage.setItem(storageKey, JSON.stringify({ title, artist, tuning, lyrics }));
+
+        const newItem = buildItem(title, artist, tuning, lyrics, storageKey);
+        container.appendChild(newItem);
+        sortAndNumber();
+
+        modalOverlay.classList.remove('open');
+    });
+
+    function searchSongs() {
+        let input = document.getElementById('searchInput').value.toLowerCase();
+        let items = document.getElementsByClassName('item');
+        for (let i = 0; i < items.length; i++) {
+            let title = items[i].querySelector('.btn').innerText.toLowerCase();
+            items[i].style.display = title.includes(input) ? "" : "none";
+        }
+    }
+</script>
