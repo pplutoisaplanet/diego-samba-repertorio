@@ -55,6 +55,9 @@
 		.delete-btn { margin-top: 12px; padding: 10px 24px; background: none; border: 1px solid #ffcccc; border-radius: 20px; font-size: 14px; color: #e88; cursor: pointer; transition: 0.2s; display: block; }
 		.delete-btn:hover { background: #fff0f0; border-color: #e88; color: #c00; }
 		.tuning-badge { font-size: 11px; font-weight: 600; color: var(--accent); background: rgba(212,175,55,0.12); padding: 2px 8px; border-radius: 20px; margin: 0 8px; border: 1px solid rgba(212,175,55,0.25); flex-shrink: 0; white-space: nowrap; }
+		.youtube-link { display: inline-flex; align-items: center; gap: 6px; margin: 0 40px 16px 40px; padding: 8px 18px; background: none; border: 1px solid #e00; border-radius: 20px; font-size: 13px; color: #e00; text-decoration: none; cursor: pointer; transition: 0.2s; }
+		.youtube-link:hover { background: #fff0f0; }
+		html[data-theme="dark"] .youtube-link:hover { background: #2a0000; }
         footer { text-align: center; padding: 40px; font-size: 14px; color: var(--muted); letter-spacing: 1px; }
     </style>
 </head>
@@ -79,6 +82,8 @@
         <input type="text" id="newArtist" placeholder="e.g. Ary Barroso">
         <label>Tuning (Tom)</label>
         <input type="text" id="newTuning" placeholder="e.g. Sol Maior">
+        <label>YouTube Link</label>
+        <input type="url" id="newYoutube" placeholder="https://www.youtube.com/watch?v=...">
         <label>Lyrics</label>
         <textarea id="newLyrics" placeholder="Paste lyrics here..."></textarea>
         <div class="modal-buttons">
@@ -2096,7 +2101,7 @@ A quem sempre lhe deu a mão</div></div>
         localStorage.setItem('theme_preference', nextTheme);
     });
 
-    function buildItem(titleText, artistText, tuningText, lyricsText, storageKey) {
+    function buildItem(titleText, artistText, tuningText, youtubeUrl, lyricsText, storageKey) {
         const item = document.createElement('div');
         item.className = 'item';
 
@@ -2122,6 +2127,14 @@ A quem sempre lhe deu a mão</div></div>
 
         const content = document.createElement('div');
         content.className = 'content';
+
+        const youtubeLinkEl = document.createElement('a');
+        youtubeLinkEl.className = 'youtube-link';
+        youtubeLinkEl.target = '_blank';
+        youtubeLinkEl.rel = 'noopener noreferrer';
+        youtubeLinkEl.innerHTML = '▶ Watch on YouTube';
+        youtubeLinkEl.style.display = youtubeUrl ? '' : 'none';
+        if (youtubeUrl) youtubeLinkEl.href = youtubeUrl;
 
         const lyricsDiv = document.createElement('div');
         lyricsDiv.className = 'lyrics';
@@ -2156,6 +2169,14 @@ A quem sempre lhe deu a mão</div></div>
         tuningInput.value = tuningText;
         tuningInput.placeholder = 'e.g. Sol Maior';
 
+        const youtubeLabel = document.createElement('label');
+        youtubeLabel.textContent = 'YouTube Link';
+        const youtubeInput = document.createElement('input');
+        youtubeInput.className = 'edit-youtube';
+        youtubeInput.type = 'url';
+        youtubeInput.value = youtubeUrl;
+        youtubeInput.placeholder = 'https://www.youtube.com/watch?v=...';
+
         const lyricsLabel = document.createElement('label');
         lyricsLabel.textContent = 'Lyrics';
         const lyricsTextarea = document.createElement('textarea');
@@ -2172,6 +2193,8 @@ A quem sempre lhe deu a mão</div></div>
         editPanel.appendChild(artistInput);
         editPanel.appendChild(tuningLabel);
         editPanel.appendChild(tuningInput);
+        editPanel.appendChild(youtubeLabel);
+        editPanel.appendChild(youtubeInput);
         editPanel.appendChild(lyricsLabel);
         editPanel.appendChild(lyricsTextarea);
                 const deleteBtn = document.createElement('button');
@@ -2189,6 +2212,7 @@ A quem sempre lhe deu a mão</div></div>
         editPanel.appendChild(saveBtn);
         editPanel.appendChild(deleteBtn);
 
+        content.appendChild(youtubeLinkEl);
         content.appendChild(editBtn);
         content.appendChild(lyricsDiv);
         content.appendChild(editPanel);
@@ -2219,17 +2243,21 @@ A quem sempre lhe deu a mão</div></div>
             const newTitle = titleInput.value.trim();
             const newArtist = artistInput.value.trim();
             const newTuning = tuningInput.value.trim();
+            const newYoutube = youtubeInput.value.trim();
             const newLyrics = lyricsTextarea.value;
 
             lyricsDiv.textContent = newLyrics;
             artistEl.textContent = newArtist;
             tuningEl.textContent = newTuning;
             tuningEl.style.display = newTuning ? '' : 'none';
+            youtubeLinkEl.href = newYoutube;
+            youtubeLinkEl.style.display = newYoutube ? '' : 'none';
 
             localStorage.setItem(storageKey, JSON.stringify({
                 title: newTitle,
                 artist: newArtist,
                 tuning: newTuning,
+                youtube: newYoutube,
                 lyrics: newLyrics
             }));
 
@@ -2284,9 +2312,10 @@ A quem sempre lhe deu a mão</div></div>
         const currentTitle = saved ? saved.title : originalTitle;
         const currentArtist = saved ? saved.artist : originalArtist;
         const currentTuning = saved ? (saved.tuning || originalTuning) : originalTuning;
+        const currentYoutube = saved ? (saved.youtube || '') : '';
         const currentLyrics = saved ? saved.lyrics : originalLyrics;
 
-        const newItem = buildItem(currentTitle, currentArtist, currentTuning, currentLyrics, storageKey);
+        const newItem = buildItem(currentTitle, currentArtist, currentTuning, currentYoutube, currentLyrics, storageKey);
         item.replaceWith(newItem);
     });
 
@@ -2298,6 +2327,7 @@ A quem sempre lhe deu a mão</div></div>
         document.getElementById('newTitle').value = '';
         document.getElementById('newArtist').value = '';
         document.getElementById('newTuning').value = '';
+        document.getElementById('newYoutube').value = '';
         document.getElementById('newLyrics').value = '';
         modalOverlay.classList.add('open');
         document.getElementById('newTitle').focus();
@@ -2315,14 +2345,15 @@ A quem sempre lhe deu a mão</div></div>
         const title = document.getElementById('newTitle').value.trim();
         const artist = document.getElementById('newArtist').value.trim();
         const tuning = document.getElementById('newTuning').value.trim();
+        const youtube = document.getElementById('newYoutube').value.trim();
         const lyrics = document.getElementById('newLyrics').value.trim();
 
         if (!title) { document.getElementById('newTitle').focus(); return; }
 
         const storageKey = 'song_' + title.toLowerCase().replace(/\s+/g, '_');
-        localStorage.setItem(storageKey, JSON.stringify({ title, artist, tuning, lyrics }));
+        localStorage.setItem(storageKey, JSON.stringify({ title, artist, tuning, youtube, lyrics }));
 
-        const newItem = buildItem(title, artist, tuning, lyrics, storageKey);
+        const newItem = buildItem(title, artist, tuning, youtube, lyrics, storageKey);
         container.appendChild(newItem);
         sortAndNumber();
 
