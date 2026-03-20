@@ -19,8 +19,6 @@
         #themeToggle:hover { border-color: var(--accent); color: var(--accent); }
         #adminAuthBtn { flex-shrink: 0; height: 50px; min-width: 92px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 14px; transition: 0.2s; }
         #adminAuthBtn:hover { border-color: var(--accent); color: var(--accent); }
-        #seedDbBtn { flex-shrink: 0; height: 50px; min-width: 88px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 14px; transition: 0.2s; }
-        #seedDbBtn:hover { border-color: var(--accent); color: var(--accent); }
         #authStatus { font-size: 12px; color: var(--muted); white-space: nowrap; }
 
 		/* Modal */
@@ -83,7 +81,6 @@
     <input type="text" id="searchInput" onkeyup="searchSongs()" placeholder="Buscar música, artista ou tom...">
     <button id="themeToggle" type="button" title="Switch to dark mode">Dark</button>
     <button id="adminAuthBtn" type="button" title="Admin login">Admin</button>
-    <button id="seedDbBtn" type="button" title="Seed songs table from current page">Seed DB</button>
     <span id="authStatus">Local Mode</span>
     <button id="addSongBtn" title="Add new song">+</button>
 </div>
@@ -2117,7 +2114,6 @@ A quem sempre lhe deu a mão</div></div>
     const themeToggle = document.getElementById('themeToggle');
     const addSongBtn = document.getElementById('addSongBtn');
     const adminAuthBtn = document.getElementById('adminAuthBtn');
-    const seedDbBtn = document.getElementById('seedDbBtn');
     const authStatus = document.getElementById('authStatus');
     const authModalOverlay = document.getElementById('authModalOverlay');
     const authEmailInput = document.getElementById('authEmail');
@@ -2160,7 +2156,6 @@ A quem sempre lhe deu a mão</div></div>
         const writeAllowed = canWriteSongs();
         addSongBtn.disabled = !writeAllowed;
         addSongBtn.title = writeAllowed ? 'Add new song' : 'Admin login required to add songs';
-        seedDbBtn.disabled = !writeAllowed;
         document.querySelectorAll('.edit-btn, .save-btn, .delete-btn').forEach(button => {
             button.disabled = !writeAllowed;
         });
@@ -2170,13 +2165,10 @@ A quem sempre lhe deu a mão</div></div>
         if (!supabaseClient) {
             adminAuthBtn.textContent = 'Admin';
             adminAuthBtn.title = 'Configure Supabase to enable admin auth';
-            seedDbBtn.style.display = 'none';
             authStatus.textContent = 'Local Mode';
             updateWriteControlsState();
             return;
         }
-
-        seedDbBtn.style.display = '';
 
         if (currentUser) {
             adminAuthBtn.textContent = 'Logout';
@@ -2747,74 +2739,8 @@ A quem sempre lhe deu a mão</div></div>
         sortAndNumber();
     }
 
-    async function seedDatabaseFromPage() {
-        if (!supabaseClient) {
-            alert('Supabase is not configured.');
-            return;
-        }
-
-        if (!canWriteSongs()) {
-            alert('Login required before seeding database.');
-            return;
-        }
-
-        const items = Array.from(container.getElementsByClassName('item'));
-        const songsPayload = items.map(item => {
-            const btn = item.querySelector('.btn');
-            const rawTitle = (btn.childNodes[0].textContent || '').trim().replace(/^\d+\.\s*/, '');
-            const artist = item.querySelector('.artist') ? item.querySelector('.artist').textContent.trim() : '';
-            const tuningEl = item.querySelector('.tuning-badge');
-            const youtubeEl = item.querySelector('.youtube-link');
-            const lyricsEl = item.querySelector('.lyrics');
-            const storageKey = item._storageKey || ('song_' + rawTitle.toLowerCase().replace(/\s+/g, '_'));
-            const youtube = youtubeEl && youtubeEl.style.display !== 'none' ? (youtubeEl.getAttribute('href') || '') : '';
-
-            return {
-                storage_key: storageKey,
-                title: rawTitle,
-                artist,
-                tuning: tuningEl && tuningEl.style.display !== 'none' ? tuningEl.textContent.trim() : '',
-                youtube,
-                lyrics: lyricsEl ? lyricsEl.textContent : '',
-                is_custom: !!item._isCustom,
-                is_deleted: false
-            };
-        });
-
-        seedDbBtn.disabled = true;
-        seedDbBtn.textContent = 'Seeding...';
-
-        const { error } = await supabaseClient
-            .from('songs')
-            .upsert(songsPayload, { onConflict: 'storage_key' });
-
-        seedDbBtn.textContent = 'Seed DB';
-        updateWriteControlsState();
-
-        if (error) {
-            alert('Seed failed: ' + error.message);
-            return;
-        }
-
-        songsPayload.forEach(song => {
-            saveSongToLocal({
-                storageKey: song.storage_key,
-                title: song.title,
-                artist: song.artist,
-                tuning: song.tuning,
-                youtube: song.youtube,
-                lyrics: song.lyrics,
-                isCustom: song.is_custom,
-                isDeleted: song.is_deleted
-            });
-        });
-
-        alert('Seed complete. ' + songsPayload.length + ' songs upserted to Supabase.');
-    }
-
     initializeAuth();
     initializeSongs();
-    seedDbBtn.addEventListener('click', seedDatabaseFromPage);
 
     // Add song modal
     const modalOverlay = document.getElementById('modalOverlay');
