@@ -5,46 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diego Samba - Repertório Oficial</title>
     <style>
-        :root { --bg: #f4f4f2; --white: #ffffff; --accent: #d4af37; --text: #222; --gray: #666; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: var(--text); }
+        :root { --bg: #f4f4f2; --white: #ffffff; --accent: #d4af37; --text: #222; --gray: #666; --muted: #aaa; --border: #ddd; --soft-hover: #fafafa; --content-bg: #fff; --item-border: #f0f0f0; }
+        html[data-theme="dark"] { --bg: #141414; --white: #1f1f1f; --accent: #d4af37; --text: #f2f2f2; --gray: #cccccc; --muted: #9f9f9f; --border: #3a3a3a; --soft-hover: #262626; --content-bg: #212121; --item-border: #2f2f2f; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: var(--text); transition: background-color 0.25s ease, color 0.25s ease; }
         header { text-align: center; padding: 40px 20px 20px 20px; }
         header h1 { font-size: 42px; margin: 0; font-family: serif; letter-spacing: -1px; }
        .search-container { width: 100%; max-width: 800px; margin: 0 auto 20px auto; padding: 0 20px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; }
-		#searchInput { flex: 1; padding: 18px; font-size: 16px; border: 1px solid #ddd; border-radius: 50px; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; box-sizing: border-box; }
+        #searchInput { flex: 1; padding: 18px; font-size: 16px; border: 1px solid var(--border); border-radius: 50px; outline: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: 0.3s; box-sizing: border-box; background: var(--white); color: var(--text); }
 		#searchInput:focus { border-color: var(--accent); box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2); }
 		#addSongBtn { flex-shrink: 0; width: 50px; height: 50px; border-radius: 50%; background: var(--accent); border: none; color: white; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: 0.2s; line-height: 1; }
 		#addSongBtn:hover { opacity: 0.85; transform: scale(1.05); }
+        #themeToggle { flex-shrink: 0; height: 50px; min-width: 78px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); transition: 0.2s; }
+        #themeToggle:hover { border-color: var(--accent); color: var(--accent); }
 
 		/* Modal */
 		.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
 		.modal-overlay.open { display: flex; }
-		.modal { background: white; border-radius: 15px; padding: 40px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); margin: 20px; box-sizing: border-box; }
+        .modal { background: var(--white); border-radius: 15px; padding: 40px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); margin: 20px; box-sizing: border-box; }
 		.modal h2 { margin: 0 0 24px 0; font-family: serif; font-size: 26px; color: var(--text); }
-		.modal label { display: block; font-size: 13px; color: #aaa; margin-bottom: 4px; margin-top: 16px; }
-		.modal input, .modal textarea { width: 100%; padding: 10px 14px; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; color: var(--text); outline: none; transition: 0.2s; }
+        .modal label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; margin-top: 16px; }
+        .modal input, .modal textarea { width: 100%; padding: 10px 14px; font-size: 15px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; color: var(--text); outline: none; transition: 0.2s; background: var(--content-bg); }
 		.modal input:focus, .modal textarea:focus { border-color: var(--accent); }
 		.modal textarea { height: 300px; resize: vertical; line-height: 1.8; }
 		.modal-buttons { display: flex; gap: 10px; margin-top: 24px; }
-		.modal-cancel { flex: 1; padding: 12px; background: none; border: 1px solid #ddd; border-radius: 20px; font-size: 15px; color: #aaa; cursor: pointer; transition: 0.2s; }
-		.modal-cancel:hover { border-color: #bbb; color: #888; }
+        .modal-cancel { flex: 1; padding: 12px; background: none; border: 1px solid var(--border); border-radius: 20px; font-size: 15px; color: var(--muted); cursor: pointer; transition: 0.2s; }
+        .modal-cancel:hover { border-color: var(--accent); color: var(--accent); }
 		.modal-save { flex: 2; padding: 12px; background: var(--accent); border: none; border-radius: 20px; font-size: 15px; font-weight: 600; color: white; cursor: pointer; transition: 0.2s; }
 		.modal-save:hover { opacity: 0.85; }
         .container { width: 100%; max-width: 800px; margin: 0 auto 50px auto; background: var(--white); box-shadow: 0 10px 40px rgba(0,0,0,0.05); border-radius: 15px; overflow: hidden; }
-        .item { border-bottom: 1px solid #f0f0f0; }
+        .item { border-bottom: 1px solid var(--item-border); }
         .btn { width: 100%; padding: 25px 30px; background: none; border: none; display: flex; justify-content: space-between; align-items: center; cursor: pointer; text-align: left; font-size: 18px; font-weight: 600; color: var(--text); transition: 0.2s; }
-        .btn:hover { background-color: #fafafa; }
-        .btn.active { color: var(--accent); border-left: 6px solid var(--accent); background-color: #fdfdfd; }
+        .btn:hover { background-color: var(--soft-hover); }
+        .btn.active { color: var(--accent); border-left: 6px solid var(--accent); background-color: var(--soft-hover); }
         .icon { font-size: 20px; color: #ccc; transition: 0.3s; flex-shrink: 0; margin-left: 10px; }
         .active .icon { transform: rotate(45deg); color: var(--accent); }
-        .content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; background-color: #fff; }
+        .content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease-out; background-color: var(--content-bg); }
         .lyrics { padding: 0 40px 40px 40px; line-height: 2; font-size: 17px; color: var(--gray); white-space: pre-wrap; }
-		.artist { font-size: 13px; font-weight: 400; color: #aaa; margin-left: auto; padding-left: 10px; text-align: right; flex-shrink: 0; }
-		.edit-btn { margin: 0 40px 20px 40px; padding: 8px 18px; background: none; border: 1px solid #ddd; border-radius: 20px; font-size: 13px; color: #aaa; cursor: pointer; transition: 0.2s; }
+		.artist { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: auto; padding-left: 10px; text-align: right; flex-shrink: 0; }
+		.edit-btn { margin: 0 40px 20px 40px; padding: 8px 18px; background: none; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; color: var(--muted); cursor: pointer; transition: 0.2s; }
 		.edit-btn:hover { border-color: var(--accent); color: var(--accent); }
 		.edit-panel { display: none; padding: 0 40px 30px 40px; }
 		.edit-panel.open { display: block; }
-		.edit-panel label { display: block; font-size: 13px; color: #aaa; margin-bottom: 4px; margin-top: 16px; }
-		.edit-panel input, .edit-panel textarea { width: 100%; padding: 10px 14px; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit; color: var(--text); outline: none; transition: 0.2s; }
+		.edit-panel label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; margin-top: 16px; }
+		.edit-panel input, .edit-panel textarea { width: 100%; padding: 10px 14px; font-size: 15px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; color: var(--text); outline: none; transition: 0.2s; background: var(--content-bg); }
 		.edit-panel input:focus, .edit-panel textarea:focus { border-color: var(--accent); }
 		.edit-panel textarea { height: 300px; resize: vertical; line-height: 1.8; white-space: pre; }
 		.save-btn { margin-top: 16px; padding: 10px 24px; background: var(--accent); border: none; border-radius: 20px; font-size: 14px; color: white; cursor: pointer; font-weight: 600; transition: 0.2s; }
@@ -52,7 +55,7 @@
 		.delete-btn { margin-top: 12px; padding: 10px 24px; background: none; border: 1px solid #ffcccc; border-radius: 20px; font-size: 14px; color: #e88; cursor: pointer; transition: 0.2s; display: block; }
 		.delete-btn:hover { background: #fff0f0; border-color: #e88; color: #c00; }
 		.tuning-badge { font-size: 11px; font-weight: 600; color: var(--accent); background: rgba(212,175,55,0.12); padding: 2px 8px; border-radius: 20px; margin: 0 8px; border: 1px solid rgba(212,175,55,0.25); flex-shrink: 0; white-space: nowrap; }
-        footer { text-align: center; padding: 40px; font-size: 14px; color: #bbb; letter-spacing: 1px; }
+        footer { text-align: center; padding: 40px; font-size: 14px; color: var(--muted); letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -63,6 +66,7 @@
 
 <div class="search-container">
     <input type="text" id="searchInput" onkeyup="searchSongs()" placeholder="Buscar música, artista ou tom...">
+    <button id="themeToggle" type="button" title="Switch to dark mode">Dark</button>
     <button id="addSongBtn" title="Add new song">+</button>
 </div>
 
@@ -2072,6 +2076,25 @@ A quem sempre lhe deu a mão</div></div>
 
 <script>
     const container = document.getElementById('songList');
+    const themeToggle = document.getElementById('themeToggle');
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        const darkIsOn = theme === 'dark';
+        themeToggle.textContent = darkIsOn ? 'Light' : 'Dark';
+        themeToggle.title = darkIsOn ? 'Switch to light mode' : 'Switch to dark mode';
+    }
+
+    const savedTheme = localStorage.getItem('theme_preference');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+
+    themeToggle.addEventListener('click', () => {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        applyTheme(nextTheme);
+        localStorage.setItem('theme_preference', nextTheme);
+    });
 
     function buildItem(titleText, artistText, tuningText, lyricsText, storageKey) {
         const item = document.createElement('div');
