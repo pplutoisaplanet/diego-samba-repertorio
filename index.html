@@ -109,8 +109,10 @@
     <div class="modal">
         <h2>Login / Sign Up</h2>
         <p class="auth-help">Use Sign Up to create a new editor account, then Login to edit songs.</p>
-        <label>Email</label>
+        <label id="authEmailLabel">Email</label>
         <input type="email" id="authEmail" placeholder="admin@email.com">
+        <label id="authUsernameLabel" style="display:none;">Username</label>
+        <input type="text" id="authUsername" placeholder="your_username" style="display:none;">
         <label>Password</label>
         <input type="password" id="authPassword" placeholder="••••••••">
         <p id="authMessage" class="auth-message"></p>
@@ -2117,7 +2119,10 @@ A quem sempre lhe deu a mão</div></div>
     const authStatus = document.getElementById('authStatus');
     const authModalOverlay = document.getElementById('authModalOverlay');
     const authEmailInput = document.getElementById('authEmail');
+    const authUsernameInput = document.getElementById('authUsername');
     const authPasswordInput = document.getElementById('authPassword');
+    const authEmailLabel = document.getElementById('authEmailLabel');
+    const authUsernameLabel = document.getElementById('authUsernameLabel');
     const authMessage = document.getElementById('authMessage');
     const authLoginBtn = document.getElementById('authLogin');
     const authSignupBtn = document.getElementById('authSignup');
@@ -2129,6 +2134,59 @@ A quem sempre lhe deu a mão</div></div>
         ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey)
         : null;
     let currentUser = null;
+    let currentUsername = null;
+
+    function setAuthFormMode(isSignup) {
+        if (isSignup) {
+            authEmailLabel.style.display = 'block';
+            authEmailInput.style.display = 'block';
+            authUsernameLabel.style.display = 'block';
+            authUsernameInput.style.display = 'block';
+            authSignupBtn.style.display = 'block';
+            authLoginBtn.style.display = 'none';
+        } else {
+            authEmailLabel.style.display = 'none';
+            authEmailInput.style.display = 'none';
+            authUsernameLabel.style.display = 'block';
+            authUsernameInput.style.display = 'block';
+            authSignupBtn.style.display = 'none';
+            authLoginBtn.style.display = 'block';
+        }
+    }
+
+    async function getUsernameForEmail(email) {
+        if (!supabaseClient) return null;
+        const { data } = await supabaseClient
+            .from('profiles')
+            .select('username')
+            .eq('email', email)
+            .single();
+        return data?.username || null;
+    }
+
+    async function getEmailForUsername(username) {
+        if (!supabaseClient) return null;
+        const { data } = await supabaseClient
+            .from('profiles')
+            .select('email')
+            .eq('username', username)
+            .single();
+        return data?.email || null;
+    }
+
+    async function createProfile(userId, email, username) {
+        if (!supabaseClient) return false;
+        const { error } = await supabaseClient.from('profiles').insert({
+            id: userId,
+            email,
+            username
+        });
+        if (error && error.code !== 'PGRST116') {
+            console.error('Profile creation failed:', error);
+            return false;
+        }
+        return true;
+    }
 
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
@@ -2212,10 +2270,18 @@ A quem sempre lhe deu a mão</div></div>
         const { data, error } = await supabaseClient.auth.getSession();
         if (!error) {
             currentUser = data.session ? data.session.user : null;
+            if (currentUser) {
+                currentUsername = await getUsernameForEmail(currentUser.email);
+            }
         }
 
-        supabaseClient.auth.onAuthStateChange((event, session) => {
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
             currentUser = session ? session.user : null;
+            if (currentUser) {
+                currentUsername = await getUsernameForEmail(currentUser.email);
+            } else {
+                currentUsername = null;
+            }
             updateAuthUi();
         });
 
@@ -2234,10 +2300,12 @@ A quem sempre lhe deu a mão</div></div>
         }
 
         authEmailInput.value = '';
+        authUsernameInput.value = '';
         authPasswordInput.value = '';
-        setAuthMessage('Enter email/password, then choose Login or Create Account.');
+        setAuthFormMode(true);
+        setAuthMessage('Create an account or login with username.');
         authModalOverlay.classList.add('open');
-        authEmailInput.focus();
+        authUsernameInput.focus();
     });
 
     document.getElementById('authCancel').addEventListener('click', () => {
@@ -2252,16 +2320,24 @@ A quem sempre lhe deu a mão</div></div>
     });
 
     document.getElementById('authLogin').addEventListener('click', async () => {
-        const email = authEmailInput.value.trim();
+        const username = authUsernameInput.value.trim();
         const password = authPasswordInput.value;
 
-        if (!email || !password) {
-            setAuthMessage('Email and password are required.', 'error');
+        if (!username || !password) {
+            setAuthMessage('Username and password are required.', 'error');
             return;
         }
 
         setAuthBusy(true);
         setAuthMessage('Logging in...');
+        
+        const email = await getEmailForUsername(username);
+        if (!email) {
+            setAuthBusy(false);
+            setAuthMessage('Username not found.', 'error');
+            return;
+        }
+
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         setAuthBusy(false);
         if (error) {
@@ -2275,15 +2351,29 @@ A quem sempre lhe deu a mão</div></div>
 
     document.getElementById('authSignup').addEventListener('click', async () => {
         const email = authEmailInput.value.trim();
+        const username = authUsernameInput.value.trim();
         const password = authPasswordInput.value;
 
-        if (!email || !password) {
-            setAuthMessage('Email and password are required.', 'error');
+        if (!email || !username || !password) {
+            setAuthMessage('Email, username, and password are required.', 'error');
+            return;
+        }
+
+        if (username.length < 3) {
+            setAuthMessage('Username must be at least 3 characters long.', 'error');
             return;
         }
 
         setAuthBusy(true);
         setAuthMessage('Creating account...');
+        
+        const existingEmail = await getEmailForUsername(username);
+        if (existingEmail) {
+            setAuthBusy(false);
+            setAuthMessage('Username already taken.', 'error');
+            return;
+        }
+
         const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
@@ -2291,19 +2381,26 @@ A quem sempre lhe deu a mão</div></div>
                 emailRedirectTo: window.location.origin + window.location.pathname
             }
         });
-        setAuthBusy(false);
+        
         if (error) {
+            setAuthBusy(false);
             setAuthMessage('Signup failed: ' + error.message, 'error');
             return;
         }
 
+        if (data && data.user) {
+            await createProfile(data.user.id, email, username);
+            currentUsername = username;
+        }
+
+        setAuthBusy(false);
         if (data && data.session) {
             setAuthMessage('Signup successful and logged in.', 'success');
             authModalOverlay.classList.remove('open');
             return;
         }
 
-        setAuthMessage('Signup successful. Check your email to confirm, then log in.', 'success');
+        setAuthMessage('Signup successful. Check your email to confirm, then log in with your username.', 'success');
     });
 
     const customSongsStorageKey = 'custom_song_keys';
@@ -2696,7 +2793,7 @@ A quem sempre lhe deu a mão</div></div>
             const dateString = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
             const timestamp = `${dateString} at ${timeString}`;
-            const editorName = currentUser?.email || 'Unknown User';
+            const editorName = currentUsername || 'Unknown User';
 
             await persistSong({
                 storageKey,
@@ -2897,7 +2994,7 @@ A quem sempre lhe deu a mão</div></div>
         const dateString = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         const timestamp = `${dateString} at ${timeString}`;
-        const creatorName = currentUser?.email || 'Unknown User';
+        const creatorName = currentUsername || 'Unknown User';
 
         const storageKey = 'song_' + title.toLowerCase().replace(/\s+/g, '_');
         await persistSong({
