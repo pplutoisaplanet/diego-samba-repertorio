@@ -114,8 +114,8 @@
 
 <div class="modal-overlay" id="authModalOverlay">
     <div class="modal">
-        <h2>Login / Sign Up</h2>
-        <p class="auth-help">Use Sign Up to create a new editor account, then Login to edit songs.</p>
+        <h2 id="authTitle">Login</h2>
+        <p class="auth-help" id="authHelp">Enter your username and password to access the editor.</p>
         <label id="authEmailLabel">Email</label>
         <input type="email" id="authEmail" placeholder="admin@email.com">
         <label id="authUsernameLabel" style="display:none;">Username</label>
@@ -125,9 +125,10 @@
         <p id="authMessage" class="auth-message"></p>
         <div class="modal-buttons">
             <button class="modal-cancel" id="authCancel">Cancel</button>
-            <button class="modal-secondary" id="authSignup">Create Account</button>
             <button class="modal-save" id="authLogin">Login</button>
+            <button class="modal-secondary" id="authSignup">Create Account</button>
         </div>
+        <p class="auth-toggle" id="authToggle" style="text-align: center; margin-top: 12px; font-size: 13px; color: var(--muted);"></p>
     </div>
 </div>
 
@@ -2143,6 +2144,10 @@ A quem sempre lhe deu a mão</div></div>
     const authMessage = document.getElementById('authMessage');
     const authLoginBtn = document.getElementById('authLogin');
     const authSignupBtn = document.getElementById('authSignup');
+    const authTitle = document.getElementById('authTitle');
+    const authHelp = document.getElementById('authHelp');
+    const authToggle = document.getElementById('authToggle');
+    const authSwitchToSignup = document.getElementById('authSwitchToSignup');
     const supabaseConfig = {
         url: 'https://znzgfuqnxixmflgswqoi.supabase.co',
         anonKey: 'sb_publishable_I8rXUFh2r7M8QxC6RBjIAg_3PVA68Z5'
@@ -2155,19 +2160,35 @@ A quem sempre lhe deu a mão</div></div>
 
     function setAuthFormMode(isSignup) {
         if (isSignup) {
+            authTitle.textContent = 'Create Account';
+            authHelp.textContent = 'Create a new editor account with a username and password.';
             authEmailLabel.style.display = 'block';
             authEmailInput.style.display = 'block';
             authUsernameLabel.style.display = 'block';
             authUsernameInput.style.display = 'block';
             authSignupBtn.style.display = 'block';
             authLoginBtn.style.display = 'none';
+            authMessage.textContent = '';
+            authToggle.innerHTML = 'Already have an account? <button id="authSwitchToLogin" style="background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 13px;">Login</button>';
+            document.getElementById('authSwitchToLogin').addEventListener('click', (e) => {
+                e.preventDefault();
+                setAuthFormMode(false);
+            });
         } else {
+            authTitle.textContent = 'Login';
+            authHelp.textContent = 'Enter your username and password to access the editor.';
             authEmailLabel.style.display = 'none';
             authEmailInput.style.display = 'none';
             authUsernameLabel.style.display = 'block';
             authUsernameInput.style.display = 'block';
             authSignupBtn.style.display = 'none';
             authLoginBtn.style.display = 'block';
+            authMessage.textContent = '';
+            authToggle.innerHTML = 'Don\'t have an account? <button id="authSwitchToSignup" style="background: none; border: none; color: var(--accent); cursor: pointer; text-decoration: underline; font-size: 13px;">Create one</button>';
+            document.getElementById('authSwitchToSignup').addEventListener('click', (e) => {
+                e.preventDefault();
+                setAuthFormMode(true);
+            });
         }
     }
 
@@ -2319,8 +2340,7 @@ A quem sempre lhe deu a mão</div></div>
         authEmailInput.value = '';
         authUsernameInput.value = '';
         authPasswordInput.value = '';
-        setAuthFormMode(true);
-        setAuthMessage('Create an account or login with username.');
+        setAuthFormMode(false);
         authModalOverlay.classList.add('open');
         authUsernameInput.focus();
     });
