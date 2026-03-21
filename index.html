@@ -139,7 +139,7 @@
 </header>
 
 <div class="search-container">
-    <input type="text" id="searchInput" onkeyup="searchSongs()" placeholder="Buscar música, artista ou tom...">
+    <input type="text" id="searchInput" onkeyup="searchSongs()" placeholder="Buscar música, artista, tom ou letra...">
     <button id="themeToggle" type="button" title="Switch to dark mode">Dark</button>
     <button id="adminAuthBtn" type="button" title="Admin login">Admin</button>
     <button id="addSongBtn" title="Add new song">+</button>
@@ -3175,7 +3175,9 @@ A quem sempre lhe deu a mão</div></div>
         let items = document.getElementsByClassName('item');
         for (let i = 0; i < items.length; i++) {
             let title = items[i].querySelector('.btn').innerText.toLowerCase();
-            items[i].style.display = title.includes(input) ? "" : "none";
+            let lyricsEl = items[i].querySelector('.lyrics');
+            let lyrics = lyricsEl ? lyricsEl.innerText.toLowerCase() : '';
+            items[i].style.display = (title.includes(input) || lyrics.includes(input)) ? "" : "none";
         }
     }
 </script>
