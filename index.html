@@ -3170,13 +3170,22 @@ A quem sempre lhe deu a mão</div></div>
         modalOverlay.classList.remove('open');
     });
 
+    function normalizeForSearch(value) {
+        return (value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    }
+
     function searchSongs() {
-        let input = document.getElementById('searchInput').value.toLowerCase();
+        let input = normalizeForSearch(document.getElementById('searchInput').value);
         let items = document.getElementsByClassName('item');
+
         for (let i = 0; i < items.length; i++) {
-            let title = items[i].querySelector('.btn').innerText.toLowerCase();
+            let title = normalizeForSearch(items[i].querySelector('.btn')?.textContent);
             let lyricsEl = items[i].querySelector('.lyrics');
-            let lyrics = lyricsEl ? lyricsEl.innerText.toLowerCase() : '';
+            // textContent works even when lyrics are inside collapsed (hidden) sections.
+            let lyrics = normalizeForSearch(lyricsEl?.textContent);
             items[i].style.display = (title.includes(input) || lyrics.includes(input)) ? "" : "none";
         }
     }
